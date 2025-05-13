@@ -18,10 +18,8 @@ dev = [
     "pytest-mock>=3.10.0",
     "pytest-cov>=4.0.0",
     "responses>=0.23.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
     "mypy>=1.0.0",
-    "ruff>=0.0.270",
+    "ruff>=0.1.6",
     "pre-commit>=3.3.0",
 ]
 
@@ -46,3 +44,11 @@ exclude = [
     ".venv",
     "__pycache__",
 ]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.isort]
+known-first-party = ["td_mcp_server"]

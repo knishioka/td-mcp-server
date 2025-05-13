@@ -35,8 +35,6 @@ If you want to run tests, you'll also need:
 - pytest-mock
 - pytest-cov
 - responses
-- black
-- isort
 - mypy
 - ruff
 - pre-commit
@@ -106,17 +104,14 @@ pytest tests/unit/test_api.py::TestTreasureDataClient::test_get_databases
 ```bash
 # Using pip
 
-# Format code with Black
-black td_mcp_server tests
-
-# Sort imports with isort
-isort td_mcp_server tests
-
 # Run linting with Ruff
 ruff check td_mcp_server tests
 
 # Run linting and auto-fix with Ruff
 ruff check --fix td_mcp_server tests
+
+# Format code with Ruff
+ruff format td_mcp_server tests
 
 # Run type checking
 mypy td_mcp_server
@@ -132,17 +127,14 @@ pre-commit run --all-files
 # Install dependencies with uv
 uv pip install -e ".[dev]"
 
-# Format code with Black
-uv run black td_mcp_server tests
-
-# Sort imports with isort
-uv run isort td_mcp_server tests
-
 # Run linting with Ruff
 uv run ruff check td_mcp_server tests
 
 # Run linting and auto-fix with Ruff
 uv run ruff check --fix td_mcp_server tests
+
+# Format code with Ruff
+uv run ruff format td_mcp_server tests
 
 # Run type checking
 uv run mypy td_mcp_server

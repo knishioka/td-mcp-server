@@ -331,25 +331,22 @@ The tests are organized as follows:
 
 ### Code Formatting, Linting, and Pre-commit Hooks
 
-The project uses Black, isort, and ruff for code formatting and linting, with pre-commit hooks to ensure code quality:
+The project uses Ruff for code formatting and linting, with pre-commit hooks to ensure code quality:
 
 #### Using pip
 
 ```bash
 # Install development tools
-pip install black isort ruff pre-commit
-
-# Format code with Black
-python -m black td_mcp_server tests
-
-# Sort imports with isort
-python -m isort td_mcp_server tests
+pip install ruff pre-commit mypy
 
 # Run linting with Ruff
 python -m ruff check td_mcp_server tests
 
 # Run linting and auto-fix with Ruff
 python -m ruff check --fix td_mcp_server tests
+
+# Format code with Ruff
+python -m ruff format td_mcp_server tests
 
 # Install pre-commit hooks (do this once)
 pre-commit install
@@ -364,17 +361,14 @@ pre-commit run --all-files
 # Install development dependencies
 uv pip install -e ".[dev]"
 
-# Format code with Black
-uv run black td_mcp_server tests
-
-# Sort imports with isort
-uv run isort td_mcp_server tests
-
 # Run linting with Ruff
 uv run ruff check td_mcp_server tests
 
 # Run linting and auto-fix with Ruff
 uv run ruff check --fix td_mcp_server tests
+
+# Format code with Ruff
+uv run ruff format td_mcp_server tests
 
 # Install pre-commit hooks (do this once)
 uv run pre-commit install
@@ -387,9 +381,8 @@ The pre-commit hooks configuration is in `.pre-commit-config.yaml` and includes:
 - Trailing whitespace removal
 - End-of-file newline enforcement
 - YAML file validation
-- Ruff linting
-- isort import sorting
-- Black code formatting
+- Ruff linting (includes import sorting)
+- Ruff formatting
 
 ### Type Checking
 
