@@ -31,23 +31,29 @@ The client requires a Treasure Data API key for authentication. You can provide 
 
 The package provides a simple command-line interface for common operations:
 
-#### List all databases
+#### List databases
 
 ```bash
-# Show only database names (default)
-uv run td-list-db
+# Show only database names (default, first 30 databases)
+uv run td-list-databases
 
 # Show detailed database information
-uv run td-list-db --verbose
+uv run td-list-databases --verbose
 
 # Get only database names in JSON format
-uv run td-list-db --format json
+uv run td-list-databases --format json
 
 # Get detailed database information in JSON format
-uv run td-list-db --format json --verbose
+uv run td-list-databases --format json --verbose
 
 # Specify a different region endpoint
-uv run td-list-db --endpoint api.treasuredata.co.jp
+uv run td-list-databases --endpoint api.treasuredata.co.jp
+
+# Pagination options (default: limit=30, offset=0)
+uv run td-list-databases --limit 10 --offset 20
+
+# Get all databases regardless of the number
+uv run td-list-databases --all
 ```
 
 #### Get information about a specific database
@@ -63,7 +69,7 @@ uv run td-get-db my_database_name --format table
 #### List tables in a database
 
 ```bash
-# Show only table names (default)
+# Show only table names (default, first 30 tables)
 uv run td-list-tables my_database_name
 
 # Show detailed table information
@@ -74,6 +80,12 @@ uv run td-list-tables my_database_name --format json
 
 # Get detailed table information in JSON format
 uv run td-list-tables my_database_name --format json --verbose
+
+# Pagination options (default: limit=30, offset=0)
+uv run td-list-tables my_database_name --limit 10 --offset 20
+
+# Get all tables regardless of the number
+uv run td-list-tables my_database_name --all
 ```
 
 ### Python API
@@ -89,9 +101,14 @@ client = TreasureDataClient()
 # Or provide API key directly
 client = TreasureDataClient(api_key="your-api-key")
 
-# Get all databases
-databases = client.get_databases()
+# Get databases with pagination (default: first 30 databases)
+databases = client.get_databases(limit=30, offset=0)
 for db in databases:
+    print(f"Database: {db.name}, Tables: {db.count}")
+
+# Get all databases regardless of the number
+all_databases = client.get_databases(all_results=True)
+for db in all_databases:
     print(f"Database: {db.name}, Tables: {db.count}")
 
 # Get information about a specific database
@@ -101,9 +118,14 @@ if db:
 else:
     print("Database not found")
 
-# Get all tables in a database
-tables = client.get_tables("my_database_name")
+# Get tables in a database with pagination (default: first 30 tables)
+tables = client.get_tables("my_database_name", limit=30, offset=0)
 for table in tables:
+    print(f"Table: {table.name}, Type: {table.type}, Count: {table.count}")
+
+# Get all tables regardless of the number
+all_tables = client.get_tables("my_database_name", all_results=True)
+for table in all_tables:
     print(f"Table: {table.name}, Type: {table.type}, Count: {table.count}")
 ```
 
@@ -193,9 +215,9 @@ To configure this MCP server for use with Claude Code:
    This will create or update the necessary configuration in your project's `.claude/plugins.json` file.
 
 4. When using Claude Code in a project with this configuration, you'll have access to the following MCP tools:
-   - `mcp__td_list_databases`: List all databases in your Treasure Data account (only names by default, add `verbose=True` for full details)
+   - `mcp__td_list_databases`: List databases in your Treasure Data account (only names by default, add `verbose=True` for full details, with pagination options `limit`, `offset`, and `all_results`)
    - `mcp__td_get_database`: Get information about a specific database
-   - `mcp__td_list_tables`: List all tables in a specific database (only names by default, add `verbose=True` for full details)
+   - `mcp__td_list_tables`: List tables in a specific database (only names by default, add `verbose=True` for full details, with pagination options `limit`, `offset`, and `all_results`)
 
 ### Setting up with Claude Desktop
 
@@ -238,11 +260,17 @@ To configure this MCP server for use with Claude Desktop:
 Once configured, you can use commands like:
 
 ```
-# Get only database names (default)
+# Get only database names (default, first 30 databases)
 /mcp td_list_databases
 
 # Get full database details
 /mcp td_list_databases verbose=True
+
+# Pagination options (default: limit=30, offset=0)
+/mcp td_list_databases limit=10 offset=20
+
+# Get all databases regardless of the number
+/mcp td_list_databases all_results=True
 ```
 
 ```
@@ -251,11 +279,17 @@ Once configured, you can use commands like:
 ```
 
 ```
-# Get only table names in a database (default)
+# Get only table names in a database (default, first 30 tables)
 /mcp td_list_tables database_name=my_database_name
 
 # Get detailed information about tables in a database
 /mcp td_list_tables database_name=my_database_name verbose=True
+
+# Pagination options (default: limit=30, offset=0)
+/mcp td_list_tables database_name=my_database_name limit=10 offset=20
+
+# Get all tables regardless of the number
+/mcp td_list_tables database_name=my_database_name all_results=True
 ```
 
 ## Development
