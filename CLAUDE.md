@@ -6,6 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository contains a Model Context Protocol (MCP) server that provides Treasure Data API integration for Claude Code and Claude Desktop, allowing for database management and listing functionality.
 
+## API Reference
+
+For Treasure Data API specifications, endpoint details, example responses, and other API-related information, refer to the detailed documentation in:
+
+**docs/treasure-data-api-guide.md**
+
+This guide includes:
+- API endpoint URLs for different regions
+- Authentication methods
+- Example API requests and responses
+- Available API operations (databases, tables, jobs, etc.)
+- Response structures and field descriptions
+
 ## Key Commands
 
 ### Installation

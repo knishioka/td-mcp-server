@@ -310,18 +310,34 @@ pip install -e ".[dev]"
 This project uses pytest for unit testing. To run the tests:
 
 ```bash
+# Using uv (recommended):
+# Create a virtual environment if you don't have one
+uv venv
+
+# Install the package with development dependencies
+uv pip install -e ".[dev]"
+
 # Run all tests
-pytest
+uv run -m pytest
 
 # Run tests with coverage report
-pytest --cov=td_mcp_server
+uv run -m pytest --cov=td_mcp_server
 
 # Run tests for a specific module
-pytest tests/unit/test_api.py
+uv run -m pytest tests/unit/test_api.py
 
 # Run a specific test
-pytest tests/unit/test_api.py::TestTreasureDataClient::test_get_databases
-```
+uv run -m pytest tests/unit/test_api.py::TestTreasureDataClient::test_get_databases
+
+# Run direct MCP integration tests
+uv run -m pytest tests/integration/test_direct_mcp.py
+
+# Alternatively, using the virtual environment directly:
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run tests
+python -m pytest
 
 ### Test Structure
 
@@ -330,17 +346,24 @@ The tests are organized as follows:
 - `tests/unit/test_api.py` - Tests for the Treasure Data API client
 - `tests/unit/test_cli_api.py` - Tests for the CLI commands
 - `tests/unit/test_mcp_impl.py` - Tests for the MCP tools implementation
+- `tests/integration/test_direct_mcp.py` - Integration tests that directly call MCP functions in-process
 
 ### Code Formatting
 
 The project uses Black and isort for code formatting:
 
 ```bash
+# Using uv (recommended):
 # Format code with Black
-black td_mcp_server tests
+uv run -m black td_mcp_server tests
 
 # Sort imports with isort
-isort td_mcp_server tests
+uv run -m isort td_mcp_server tests
+
+# Alternatively, using the virtual environment:
+source .venv/bin/activate
+python -m black td_mcp_server tests
+python -m isort td_mcp_server tests
 ```
 
 ### Type Checking
@@ -348,5 +371,10 @@ isort td_mcp_server tests
 You can run static type checking with mypy:
 
 ```bash
-mypy td_mcp_server
+# Using uv (recommended):
+uv run -m mypy td_mcp_server
+
+# Alternatively, using the virtual environment:
+source .venv/bin/activate
+python -m mypy td_mcp_server
 ```
