@@ -38,6 +38,8 @@ If you want to run tests, you'll also need:
 - black
 - isort
 - mypy
+- ruff
+- pre-commit
 
 ### Running the MCP Server
 
@@ -99,7 +101,7 @@ pytest tests/unit/test_api.py
 pytest tests/unit/test_api.py::TestTreasureDataClient::test_get_databases
 ```
 
-### Code Formatting and Type Checking
+### Code Formatting, Linting, and Type Checking
 
 ```bash
 # Format code with Black
@@ -108,8 +110,20 @@ black td_mcp_server tests
 # Sort imports with isort
 isort td_mcp_server tests
 
+# Run linting with Ruff
+ruff check td_mcp_server tests
+
+# Run linting and auto-fix with Ruff
+ruff check --fix td_mcp_server tests
+
 # Run type checking
 mypy td_mcp_server
+
+# Initialize pre-commit (first time only)
+pre-commit install
+
+# Run pre-commit on all files
+pre-commit run --all-files
 ```
 
 ## Architecture

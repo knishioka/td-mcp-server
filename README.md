@@ -288,6 +288,8 @@ For development and testing:
 - black >= 23.0.0
 - isort >= 5.12.0
 - mypy >= 1.0.0
+- ruff >= 0.0.270
+- pre-commit >= 3.3.0
 
 ### Running Tests
 
@@ -327,20 +329,40 @@ The tests are organized as follows:
 - `tests/unit/test_mcp_impl.py` - Tests for the MCP tools implementation
 - `tests/integration/test_direct_mcp.py` - Integration tests that directly call MCP functions in-process
 
-### Code Formatting
+### Code Formatting, Linting, and Pre-commit Hooks
 
-The project uses Black and isort for code formatting:
+The project uses Black, isort, and ruff for code formatting and linting, with pre-commit hooks to ensure code quality:
 
 ```bash
-# Install code formatting tools
-pip install black isort
+# Install development tools
+pip install black isort ruff pre-commit
 
 # Format code with Black
 python -m black td_mcp_server tests
 
 # Sort imports with isort
 python -m isort td_mcp_server tests
+
+# Run linting with Ruff
+python -m ruff check td_mcp_server tests
+
+# Run linting and auto-fix with Ruff
+python -m ruff check --fix td_mcp_server tests
+
+# Install pre-commit hooks (do this once)
+pre-commit install
+
+# Run all pre-commit hooks on all files
+pre-commit run --all-files
 ```
+
+The pre-commit hooks configuration is in `.pre-commit-config.yaml` and includes:
+- Trailing whitespace removal
+- End-of-file newline enforcement
+- YAML file validation
+- Ruff linting
+- isort import sorting
+- Black code formatting
 
 ### Type Checking
 
