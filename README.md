@@ -35,23 +35,23 @@ The package provides a simple command-line interface for common operations:
 
 ```bash
 # Show databases in table format (default)
-python -m td_mcp_server list-databases
+uv run td-list-db
 
 # Get JSON output
-python -m td_mcp_server list-databases --format=json
+uv run td-list-db --format json
 
 # Specify a different region endpoint
-python -m td_mcp_server --endpoint=api.treasuredata.co.jp list-databases
+uv run td-list-db --endpoint api.treasuredata.co.jp
 ```
 
 #### Get information about a specific database
 
 ```bash
 # Get JSON output (default)
-python -m td_mcp_server get-database my_database_name
+uv run td-get-db my_database_name
 
 # Get table output
-python -m td_mcp_server get-database my_database_name --format=table
+uv run td-get-db my_database_name --format table
 ```
 
 ### Python API
@@ -94,24 +94,49 @@ python -m td_mcp_server --endpoint=api.treasuredata.co.jp list-databases
 
 ## MCP Server Configuration
 
-This server implements the Model Context Protocol (MCP) to provide Claude with access to Treasure Data API functionality.
+This server implements the Model Context Protocol (MCP) to provide Claude with access to Treasure Data API functionality. It uses the FastMCP library with `mcp.run(transport='stdio')` approach for standard MCP communication.
 
 ### Running the MCP Server
 
-You can run the MCP server in several ways:
+You can run the MCP server in two ways:
 
 ```bash
 # Using uv run (recommended)
-uv run mcp
+uv run td-mcp
 
-# Using Python module
-python -m td_mcp_server --mcp-server
-
-# Using the installed script
-mcp
+# Using the installed script (after pip install)
+td-mcp
 ```
 
-The server requires a Treasure Data API key, which should be provided via the `TD_API_KEY` environment variable.
+The server requires a Treasure Data API key, which should be provided via the `TD_API_KEY` environment variable or with the `--api-key` option:
+
+```bash
+# Using environment variable (recommended)
+export TD_API_KEY="your-api-key"
+uv run td-mcp
+
+# Or providing the API key directly
+uv run td-mcp --api-key="your-api-key"
+```
+
+For development or debugging, you can run the server with verbose logging:
+
+```bash
+# Enable verbose logging
+uv run td-mcp --verbose
+```
+
+### FastMCP Implementation
+
+Under the hood, this server uses the [FastMCP](https://modelcontextprotocol.io/quickstart/server) library, which provides an easy-to-use framework for building MCP servers. The implementation:
+
+1. Creates a FastMCP server instance with the name "treasure-data"
+2. Uses function decorators (`@mcp.tool()`) to register tools for database operations
+3. The tools are implemented as async functions with proper type annotations
+4. Uses `mcp.run(transport='stdio')` to start the server with standard I/O communication
+5. Handles MCP requests and responses automatically through the FastMCP library
+
+The implementation follows the standard pattern recommended in the Model Context Protocol documentation for Python servers, making it compatible with Claude Desktop and other MCP clients.
 
 ### Setting up with Claude Code
 
@@ -137,7 +162,7 @@ To configure this MCP server for use with Claude Code:
          "name": "td-mcp",
          "description": "Treasure Data API plugin for database management",
          "command": {
-           "args": ["uv", "run", "mcp"],
+           "args": ["uv", "run", "td-mcp"],
            "env": {
              "TD_API_KEY": "${TD_API_KEY}"
            }
@@ -157,15 +182,35 @@ To configure this MCP server for use with Claude Desktop:
 
 1. Install the server as described above
 
-2. In Claude Desktop, create a new MCP tool configuration:
+2. Method 1: Using the Claude Desktop UI
    - Go to Settings > MCP Tools > Add New Tool
    - Name: Treasure Data API
-   - Command: `uv run mcp`
+   - Command: `uv run td-mcp`
    - Environment variables: Add your `TD_API_KEY` 
 
-3. Save the configuration and restart Claude Desktop
+3. Method 2: Using claude_desktop_config.json (recommended)
+   - Create or update your claude_desktop_config.json file:
+     - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+     - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - Add the following configuration:
+     ```json
+     {
+       "mcpServers": {
+         "treasure-data": {
+           "command": "uv",
+           "args": ["run", "td-mcp"],
+           "env": {
+             "TD_API_KEY": "your-api-key"
+           }
+         }
+       }
+     }
+     ```
+   - Replace `your-api-key` with your actual Treasure Data API key
 
-4. You can now use the Treasure Data API tools in your Claude Desktop conversations
+4. Save the configuration and restart Claude Desktop
+
+5. You can now use the Treasure Data API tools in your Claude Desktop conversations
 
 ### Using MCP Tools in Claude
 

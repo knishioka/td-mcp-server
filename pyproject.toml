@@ -14,3 +14,6 @@ dependencies = [
 
 [project.scripts]
 mcp = "td_mcp_server.mcp:main"
+td-mcp = "td_mcp_server.cli_api:main_td_mcp"
+td-list-db = "td_mcp_server.cli_api:main_list_db"
+td-get-db = "td_mcp_server.cli_api:main_get_db"
