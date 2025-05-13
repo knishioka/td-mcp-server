@@ -60,10 +60,10 @@ uv run td-list-databases --all
 
 ```bash
 # Get JSON output (default)
-uv run td-get-db my_database_name
+uv run td-get-database my_database_name
 
 # Get table output
-uv run td-get-db my_database_name --format table
+uv run td-get-database my_database_name --format table
 ```
 
 #### List tables in a database

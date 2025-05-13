@@ -167,8 +167,8 @@ def list_tables(database_name: str, api_key: Optional[str] = None,
         sys.exit(1)
 
 
-def main_list_db():
-    """Entry point for the list-db command."""
+def main_list_databases():
+    """Entry point for the list-databases command."""
     parser = argparse.ArgumentParser(description="List databases in your Treasure Data account")
     parser.add_argument("--api-key", help="Treasure Data API key (if not provided, uses TD_API_KEY env var)")
     parser.add_argument("--endpoint", default="api.treasuredata.com", 
@@ -189,7 +189,7 @@ def main_list_db():
                  verbose=args.verbose, limit=args.limit, offset=args.offset, all_results=args.all_results)
 
 
-def main_get_db():
+def main_get_database():
     """Entry point for the get-db command."""
     parser = argparse.ArgumentParser(description="Get information about a specific database")
     parser.add_argument("database_name", help="Name of the database to retrieve")
@@ -273,10 +273,10 @@ def main_td_mcp():
 if __name__ == "__main__":
     # This is just for testing - the entry points will be defined in pyproject.toml
     if len(sys.argv) > 1 and sys.argv[1] == "list":
-        main_list_db()
+        main_list_databases()
     elif len(sys.argv) > 1 and sys.argv[1] == "get":
         sys.argv.pop(1)  # Remove the 'get' arg so argparse works correctly
-        main_get_db()
+        main_get_database()
     else:
         print("Usage: python -m td_mcp_server.cli_api [list|get] [args...]", file=sys.stderr)
         sys.exit(1)
