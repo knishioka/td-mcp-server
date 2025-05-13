@@ -154,23 +154,16 @@ To configure this MCP server for use with Claude Code:
    export TD_API_KEY="your-api-key"
    ```
 
-3. Create a `.claude/plugins.json` file in your project directory with the following content:
-   ```json
-   {
-     "plugins": [
-       {
-         "name": "td-mcp",
-         "description": "Treasure Data API plugin for database management",
-         "command": {
-           "args": ["uv", "run", "td-mcp"],
-           "env": {
-             "TD_API_KEY": "${TD_API_KEY}"
-           }
-         }
-       }
-     ]
-   }
+3. Add the MCP server using the Claude Code CLI
+   ```bash
+   # Navigate to your project directory
+   cd your-project-directory
+
+   # Add the MCP server
+   claude mcp add td -e TD_API_KEY=${TD_API_KEY} -e TD_ENDPOINT=api.treasuredata.com -- uv run td-mcp
    ```
+
+   This will create or update the necessary configuration in your project's `.claude/plugins.json` file.
 
 4. When using Claude Code in a project with this configuration, you'll have access to the following MCP tools:
    - `mcp__td_list_databases`: List all databases in your Treasure Data account
