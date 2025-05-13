@@ -18,8 +18,11 @@ mcp = FastMCP("treasure-data")
 
 
 @mcp.tool()
-async def td_list_databases() -> Dict[str, Any]:
+async def td_list_databases(verbose: bool = False) -> Dict[str, Any]:
     """Get all databases in your Treasure Data account.
+    
+    Args:
+        verbose: If True, return full database details; if False, return only database names (default)
     """
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
@@ -32,9 +35,17 @@ async def td_list_databases() -> Dict[str, Any]:
     try:
         client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
         databases = client.get_databases()
-        return {
-            "databases": [db.model_dump() for db in databases]
-        }
+        
+        if verbose:
+            # Return full database details
+            return {
+                "databases": [db.model_dump() for db in databases]
+            }
+        else:
+            # Return only database names
+            return {
+                "databases": [db.name for db in databases]
+            }
     except Exception as e:
         return {
             "error": str(e),

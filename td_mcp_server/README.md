@@ -1,45 +1,21 @@
-# Treasure Data MCP Server
+# Treasure Data MCP Server Package
 
-A Machine Control Protocol (MCP) server for Treasure Data integration with Claude.
+This directory contains the core implementation of the Treasure Data MCP server.
 
-## Installation
+Please refer to the [main README](../README.md) in the repository root for complete documentation on:
+- Installation
+- Authentication
+- Usage
+- MCP server configuration
+- Claude Code and Claude Desktop setup
 
-```bash
-# Install the package
-pip install td-mcp-server
-```
+## Package Structure
 
-## Claude Code Configuration
-
-```bash
-# Add to Claude Code (replace with your API key)
-claude mcp add td -e TD_API_KEY=your_api_key_here
-
-# For Japan region
-claude mcp add td -e TD_API_KEY=your_api_key_here -e TD_ENDPOINT=api.treasuredata.co.jp
-```
-
-## Claude Desktop Configuration
-
-Create the following configuration file in `~/.mcp/servers/td.json`:
-
-```json
-{
-  "name": "td",
-  "command": ["python", "-m", "td_mcp_server.mcp"],
-  "environment": {
-    "TD_API_KEY": "your_api_key_here",
-    "TD_ENDPOINT": "api.treasuredata.co.jp"
-  }
-}
-```
-
-## Features
-
-- Database management
-- Table management
-- Query execution
-- Job management
+- `__init__.py`: Package initialization
+- `api.py`: Treasure Data API client implementation
+- `cli_api.py`: Command-line interface functions
+- `mcp.py`: MCP server entry point
+- `mcp_impl.py`: MCP tools implementation
 
 ## Requirements
 

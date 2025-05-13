@@ -34,11 +34,17 @@ The package provides a simple command-line interface for common operations:
 #### List all databases
 
 ```bash
-# Show databases in table format (default)
+# Show only database names (default)
 uv run td-list-db
 
-# Get JSON output
+# Show detailed database information
+uv run td-list-db --verbose
+
+# Get only database names in JSON format
 uv run td-list-db --format json
+
+# Get detailed database information in JSON format
+uv run td-list-db --format json --verbose
 
 # Specify a different region endpoint
 uv run td-list-db --endpoint api.treasuredata.co.jp
@@ -166,7 +172,7 @@ To configure this MCP server for use with Claude Code:
    This will create or update the necessary configuration in your project's `.claude/plugins.json` file.
 
 4. When using Claude Code in a project with this configuration, you'll have access to the following MCP tools:
-   - `mcp__td_list_databases`: List all databases in your Treasure Data account
+   - `mcp__td_list_databases`: List all databases in your Treasure Data account (only names by default, add `verbose=True` for full details)
    - `mcp__td_get_database`: Get information about a specific database
 
 ### Setting up with Claude Desktop
@@ -210,7 +216,11 @@ To configure this MCP server for use with Claude Desktop:
 Once configured, you can use commands like:
 
 ```
+# Get only database names (default)
 /mcp td_list_databases
+
+# Get full database details
+/mcp td_list_databases verbose=True
 ```
 
 or

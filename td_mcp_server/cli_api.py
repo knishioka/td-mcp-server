@@ -12,7 +12,7 @@ from .api import TreasureDataClient, Database
 
 
 def list_databases(api_key: Optional[str] = None, endpoint: str = "api.treasuredata.com", 
-                   format_output: str = "table") -> None:
+                   format_output: str = "table", verbose: bool = False) -> None:
     """
     List all databases in your Treasure Data account.
     
@@ -20,6 +20,7 @@ def list_databases(api_key: Optional[str] = None, endpoint: str = "api.treasured
         api_key: Treasure Data API key (if not provided, uses TD_API_KEY env var)
         endpoint: API endpoint to use
         format_output: Output format (table or json)
+        verbose: If True, show all database details; if False, show only names
     """
     try:
         client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
@@ -27,7 +28,10 @@ def list_databases(api_key: Optional[str] = None, endpoint: str = "api.treasured
         
         if format_output == "json":
             # Output as JSON
-            db_list = [db.model_dump() for db in databases]
+            if verbose:
+                db_list = [db.model_dump() for db in databases]
+            else:
+                db_list = [db.name for db in databases]
             print(json.dumps(db_list, indent=2))
         else:
             # Output as table
@@ -35,24 +39,29 @@ def list_databases(api_key: Optional[str] = None, endpoint: str = "api.treasured
                 print("No databases found.")
                 return
                 
-            # Format as a table
-            headers = ["Name", "Tables", "Created", "Updated", "Permission", "Protected"]
-            
-            # Print headers
-            print(" | ".join(headers))
-            print("-" * (sum(len(h) for h in headers) + len(headers) * 3 - 2))
-            
-            # Print each row
-            for db in databases:
-                row = [
-                    db.name,
-                    str(db.count),
-                    db.created_at,
-                    db.updated_at,
-                    db.permission,
-                    "Yes" if db.delete_protected else "No"
-                ]
-                print(" | ".join(row))
+            if verbose:
+                # Format as a detailed table
+                headers = ["Name", "Tables", "Created", "Updated", "Permission", "Protected"]
+                
+                # Print headers
+                print(" | ".join(headers))
+                print("-" * (sum(len(h) for h in headers) + len(headers) * 3 - 2))
+                
+                # Print each row
+                for db in databases:
+                    row = [
+                        db.name,
+                        str(db.count),
+                        db.created_at,
+                        db.updated_at,
+                        db.permission,
+                        "Yes" if db.delete_protected else "No"
+                    ]
+                    print(" | ".join(row))
+            else:
+                # Only show database names
+                for db in databases:
+                    print(db.name)
     
     except Exception as e:
         print(f"Error: {str(e)}", file=sys.stderr)
@@ -99,9 +108,11 @@ def main_list_db():
                       help="API endpoint (default: api.treasuredata.com for US, use api.treasuredata.co.jp for Japan)")
     parser.add_argument("--format", dest="format_output", choices=["table", "json"], default="table", 
                       help="Output format (table or json)")
+    parser.add_argument("--verbose", "-v", action="store_true", 
+                      help="Show detailed information about databases (default: show only names)")
     
     args = parser.parse_args()
-    list_databases(api_key=args.api_key, endpoint=args.endpoint, format_output=args.format_output)
+    list_databases(api_key=args.api_key, endpoint=args.endpoint, format_output=args.format_output, verbose=args.verbose)
 
 
 def main_get_db():
