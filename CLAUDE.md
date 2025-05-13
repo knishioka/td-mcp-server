@@ -21,30 +21,35 @@ This guide includes:
 
 ## Key Commands
 
-### Installation
+### Dependencies
 
-```bash
-# Install from source in development mode
-pip install -e .
+This project requires Python 3.11+ and the following packages:
+- requests
+- pydantic
+- mcp
+- click
+- typer
 
-# Install with development dependencies
-pip install -e ".[dev]"
-```
+If you want to run tests, you'll also need:
+- pytest
+- pytest-mock
+- pytest-cov
+- responses
+- black
+- isort
+- mypy
 
 ### Running the MCP Server
 
 ```bash
-# Run using uv (recommended)
-uv run td-mcp
+# Run with MCP CLI (recommended for Claude Desktop integration)
+mcp run td_mcp_server/server.py
 
-# Run directly after installation
-td-mcp
+# Install server for Claude Desktop
+mcp install td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.com"
 
-# Run with API key specified
-TD_API_KEY="your-api-key" td-mcp
-
-# Run with different endpoint for Japan region
-TD_API_KEY="your-api-key" TD_ENDPOINT="api.treasuredata.co.jp" td-mcp
+# Install server for Claude Desktop (Japan region)
+mcp install td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.co.jp"
 ```
 
 ### CLI Commands
@@ -124,19 +129,20 @@ The codebase is structured around the following key components:
 - Entry points: `main_list_databases`, `main_get_database`, `main_list_tables`
 - Supports various output formats (table, JSON) and verbosity levels
 
-### 3. MCP Implementation (`td_mcp_server/mcp_impl.py`)
+### 3. MCP Implementation
 
+#### Core MCP Tools (`td_mcp_server/mcp_impl.py`)
 - Implements the FastMCP server: `mcp = FastMCP("treasure-data")`
 - MCP tools: `td_list_databases`, `td_get_database`, `td_list_tables` 
 - All tools are async functions with proper type annotations
 - Tools read API credentials from environment variables: `TD_API_KEY`, `TD_ENDPOINT`
 
-### 4. MCP Server Entry Point (`td_mcp_server/mcp.py`)
+#### Standalone Server (`td_mcp_server/server.py`)
+- Standalone server script that can be run directly with `mcp run`
+- Used for Claude Desktop integration with `mcp install`
+- Provides all Treasure Data API functionality through the MCP protocol
 
-- Main entry point for the MCP server using stdio transport
-- Called by CLI commands defined in pyproject.toml
-
-### 5. Tests
+### 4. Tests
 
 - Unit tests for API client: `tests/unit/test_api.py`
 - Unit tests for CLI commands: `tests/unit/test_cli_api.py` 

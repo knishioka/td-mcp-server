@@ -228,55 +228,31 @@ def main_list_tables():
                 offset=args.offset, all_results=args.all_results)
 
 
-def main_td_mcp():
-    """Entry point for the td-mcp command to start MCP server using FastMCP."""
-    parser = argparse.ArgumentParser(description="Start Treasure Data MCP server")
-    parser.add_argument("--api-key", help="Treasure Data API key (if not provided, uses TD_API_KEY env var)")
-    parser.add_argument("--endpoint", default="api.treasuredata.com", 
-                      help="API endpoint (default: api.treasuredata.com for US, use api.treasuredata.co.jp for Japan)")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
-    
-    args = parser.parse_args()
-    
-    # Set environment variables for the MCP implementation
-    if args.api_key:
-        os.environ["TD_API_KEY"] = args.api_key
-    
-    if args.endpoint:
-        os.environ["TD_ENDPOINT"] = args.endpoint
-    
-    # Import here to avoid circular imports
-    from .mcp_impl import mcp
-    
-    api_key = args.api_key or os.environ.get("TD_API_KEY")
-    endpoint = args.endpoint
-    
-    print("Starting Treasure Data MCP Server with FastMCP...", file=sys.stderr)
-    print(f"API Endpoint: {endpoint}", file=sys.stderr)
-    
-    if not api_key:
-        print("ERROR: TD_API_KEY environment variable is not set and --api-key not provided", file=sys.stderr)
-        print("Please set your API key using: export TD_API_KEY='your-api-key'", file=sys.stderr)
-        sys.exit(1)
-        
-    print("Initializing FastMCP server...", file=sys.stderr)
-    
-    try:
-        # Run the FastMCP server with stdio transport
-        print("Waiting for MCP requests...", file=sys.stderr)
-        mcp.run(transport='stdio')
-    except Exception as e:
-        print(f"ERROR: {str(e)}", file=sys.stderr)
-        sys.exit(1)
 
 
 if __name__ == "__main__":
-    # This is just for testing - the entry points will be defined in pyproject.toml
-    if len(sys.argv) > 1 and sys.argv[1] == "list":
-        main_list_databases()
-    elif len(sys.argv) > 1 and sys.argv[1] == "get":
-        sys.argv.pop(1)  # Remove the 'get' arg so argparse works correctly
-        main_get_database()
+    # Direct module execution support
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+        sys.argv.pop(1)  # Remove the command arg so argparse works correctly
+        
+        if command == "list":
+            main_list_databases()
+        elif command == "get":
+            main_get_database()
+        elif command == "tables":
+            main_list_tables()
+        else:
+            print("Unknown command. Available commands: list, get, tables", file=sys.stderr)
+            print("Usage:", file=sys.stderr)
+            print("  python -m td_mcp_server.cli_api list [options]", file=sys.stderr)
+            print("  python -m td_mcp_server.cli_api get DATABASE_NAME [options]", file=sys.stderr)
+            print("  python -m td_mcp_server.cli_api tables DATABASE_NAME [options]", file=sys.stderr)
+            sys.exit(1)
     else:
-        print("Usage: python -m td_mcp_server.cli_api [list|get] [args...]", file=sys.stderr)
+        print("Command required. Available commands: list, get, tables", file=sys.stderr)
+        print("Usage:", file=sys.stderr)
+        print("  python -m td_mcp_server.cli_api list [options]", file=sys.stderr)
+        print("  python -m td_mcp_server.cli_api get DATABASE_NAME [options]", file=sys.stderr)
+        print("  python -m td_mcp_server.cli_api tables DATABASE_NAME [options]", file=sys.stderr)
         sys.exit(1)

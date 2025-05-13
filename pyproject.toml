@@ -24,8 +24,6 @@ dev = [
 ]
 
 [project.scripts]
-mcp = "td_mcp_server.mcp:main"
-td-mcp = "td_mcp_server.cli_api:main_td_mcp"
 td-list-databases = "td_mcp_server.cli_api:main_list_databases"
 td-get-database = "td_mcp_server.cli_api:main_get_database"
 td-list-tables = "td_mcp_server.cli_api:main_list_tables"

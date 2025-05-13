@@ -2,13 +2,12 @@
 
 A Model Context Protocol (MCP) server that provides Treasure Data API integration for Claude Code and Claude Desktop, allowing for database management and listing functionality.
 
-## Installation
+## Getting Started
 
 ```bash
-# Install from source
+# Clone the repository
 git clone https://github.com/yourusername/td-mcp-server.git
 cd td-mcp-server
-pip install -e .
 ```
 
 ## Authentication
@@ -29,63 +28,63 @@ The client requires a Treasure Data API key for authentication. You can provide 
 
 ### Command Line Interface
 
-The package provides a simple command-line interface for common operations:
+The package provides a simple command-line interface for common operations that can be used without installation:
 
 #### List databases
 
 ```bash
 # Show only database names (default, first 30 databases)
-uv run td-list-databases
+python -m td_mcp_server.cli_api list
 
 # Show detailed database information
-uv run td-list-databases --verbose
+python -m td_mcp_server.cli_api list --verbose
 
 # Get only database names in JSON format
-uv run td-list-databases --format json
+python -m td_mcp_server.cli_api list --format json
 
 # Get detailed database information in JSON format
-uv run td-list-databases --format json --verbose
+python -m td_mcp_server.cli_api list --format json --verbose
 
 # Specify a different region endpoint
-uv run td-list-databases --endpoint api.treasuredata.co.jp
+python -m td_mcp_server.cli_api list --endpoint api.treasuredata.co.jp
 
 # Pagination options (default: limit=30, offset=0)
-uv run td-list-databases --limit 10 --offset 20
+python -m td_mcp_server.cli_api list --limit 10 --offset 20
 
 # Get all databases regardless of the number
-uv run td-list-databases --all
+python -m td_mcp_server.cli_api list --all
 ```
 
 #### Get information about a specific database
 
 ```bash
 # Get JSON output (default)
-uv run td-get-database my_database_name
+python -m td_mcp_server.cli_api get my_database_name
 
 # Get table output
-uv run td-get-database my_database_name --format table
+python -m td_mcp_server.cli_api get my_database_name --format table
 ```
 
 #### List tables in a database
 
 ```bash
 # Show only table names (default, first 30 tables)
-uv run td-list-tables my_database_name
+python -m td_mcp_server.cli_api tables my_database_name
 
 # Show detailed table information
-uv run td-list-tables my_database_name --verbose
+python -m td_mcp_server.cli_api tables my_database_name --verbose
 
 # Get only table names in JSON format
-uv run td-list-tables my_database_name --format json
+python -m td_mcp_server.cli_api tables my_database_name --format json
 
 # Get detailed table information in JSON format
-uv run td-list-tables my_database_name --format json --verbose
+python -m td_mcp_server.cli_api tables my_database_name --format json --verbose
 
 # Pagination options (default: limit=30, offset=0)
-uv run td-list-tables my_database_name --limit 10 --offset 20
+python -m td_mcp_server.cli_api tables my_database_name --limit 10 --offset 20
 
 # Get all tables regardless of the number
-uv run td-list-tables my_database_name --all
+python -m td_mcp_server.cli_api tables my_database_name --all
 ```
 
 ### Python API
@@ -147,32 +146,22 @@ This server implements the Model Context Protocol (MCP) to provide Claude with a
 
 ### Running the MCP Server
 
-You can run the MCP server in two ways:
+You can run the MCP server using the standard MCP CLI:
 
 ```bash
-# Using uv run (recommended)
-uv run td-mcp
-
-# Using the installed script (after pip install)
-td-mcp
+# Using MCP CLI
+mcp run td_mcp_server/server.py
 ```
 
-The server requires a Treasure Data API key, which should be provided via the `TD_API_KEY` environment variable or with the `--api-key` option:
+The server requires a Treasure Data API key, which should be provided via the `TD_API_KEY` environment variable:
 
 ```bash
-# Using environment variable (recommended)
+# Using environment variable
 export TD_API_KEY="your-api-key"
-uv run td-mcp
+mcp run td_mcp_server/server.py
 
-# Or providing the API key directly
-uv run td-mcp --api-key="your-api-key"
-```
-
-For development or debugging, you can run the server with verbose logging:
-
-```bash
-# Enable verbose logging
-uv run td-mcp --verbose
+# For Claude Desktop integration, you can include the API key during installation
+mcp install td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.com"
 ```
 
 ### FastMCP Implementation
@@ -191,11 +180,9 @@ The implementation follows the standard pattern recommended in the Model Context
 
 To configure this MCP server for use with Claude Code:
 
-1. Install the server
+1. Clone the repository
    ```bash
    git clone https://github.com/yourusername/td-mcp-server.git
-   cd td-mcp-server
-   pip install -e .
    ```
 
 2. Set your Treasure Data API key as an environment variable
@@ -208,8 +195,8 @@ To configure this MCP server for use with Claude Code:
    # Navigate to your project directory
    cd your-project-directory
 
-   # Add the MCP server
-   claude mcp add td -e TD_API_KEY=${TD_API_KEY} -e TD_ENDPOINT=api.treasuredata.com -- uv run td-mcp
+   # Add the MCP server (use absolute path to server.py)
+   claude mcp add td -e TD_API_KEY=${TD_API_KEY} -e TD_ENDPOINT=api.treasuredata.com -- mcp run /absolute/path/to/td-mcp-server/td_mcp_server/server.py
    ```
 
    This will create or update the necessary configuration in your project's `.claude/plugins.json` file.
@@ -223,37 +210,27 @@ To configure this MCP server for use with Claude Code:
 
 To configure this MCP server for use with Claude Desktop:
 
-1. Install the server as described above
+1. Clone the repository
+   ```bash
+   git clone https://github.com/yourusername/td-mcp-server.git
+   ```
 
-2. Method 1: Using the Claude Desktop UI
+2. Method 1: Using the MCP CLI (Recommended)
+   ```bash
+   # Install the server with Claude Desktop using the MCP CLI
+   mcp install /absolute/path/to/td-mcp-server/td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.com"
+   
+   # For Japan region
+   mcp install /absolute/path/to/td-mcp-server/td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.co.jp"
+   ```
+
+3. Method 2: Using the Claude Desktop UI
    - Go to Settings > MCP Tools > Add New Tool
    - Name: Treasure Data API
-   - Command: `uv run td-mcp`
-   - Environment variables: Add your `TD_API_KEY` 
+   - Command: `mcp run /absolute/path/to/td-mcp-server/td_mcp_server/server.py`
+   - Environment variables: Add your `TD_API_KEY` and optionally `TD_ENDPOINT`
 
-3. Method 2: Using claude_desktop_config.json (recommended)
-   - Create or update your claude_desktop_config.json file:
-     - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-     - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-   - Add the following configuration:
-     ```json
-     {
-       "mcpServers": {
-         "treasure-data": {
-           "command": "uv",
-           "args": ["run", "td-mcp"],
-           "env": {
-             "TD_API_KEY": "your-api-key"
-           }
-         }
-       }
-     }
-     ```
-   - Replace `your-api-key` with your actual Treasure Data API key
-
-4. Save the configuration and restart Claude Desktop
-
-5. You can now use the Treasure Data API tools in your Claude Desktop conversations
+4. You can now use the Treasure Data API tools in your Claude Desktop conversations
 
 ### Using MCP Tools in Claude
 
@@ -294,50 +271,52 @@ Once configured, you can use commands like:
 
 ## Development
 
-### Setting Up the Development Environment
+### Environment Requirements
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/td-mcp-server.git
-cd td-mcp-server
+This project requires Python 3.11+ and the following packages:
+- requests >= 2.28.0
+- pydantic >= 2.0.0
+- mcp[cli] >= 1.8.1
+- click >= 8.0.0, < 8.2.0
+- typer >= 0.9.0
 
-# Install dev dependencies
-pip install -e ".[dev]"
-```
+For development and testing:
+- pytest >= 7.0.0
+- pytest-mock >= 3.10.0
+- pytest-cov >= 4.0.0
+- responses >= 0.23.0
+- black >= 23.0.0
+- isort >= 5.12.0
+- mypy >= 1.0.0
 
 ### Running Tests
 
 This project uses pytest for unit testing. To run the tests:
 
 ```bash
-# Using uv (recommended):
 # Create a virtual environment if you don't have one
-uv venv
+python -m venv .venv
 
-# Install the package with development dependencies
-uv pip install -e ".[dev]"
+# Activate virtual environment
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+
+# Install required dependencies
+pip install pytest pytest-mock pytest-cov responses pytest-asyncio
 
 # Run all tests
-uv run -m pytest
+python -m pytest
 
 # Run tests with coverage report
-uv run -m pytest --cov=td_mcp_server
+python -m pytest --cov=td_mcp_server
 
 # Run tests for a specific module
-uv run -m pytest tests/unit/test_api.py
+python -m pytest tests/unit/test_api.py
 
 # Run a specific test
-uv run -m pytest tests/unit/test_api.py::TestTreasureDataClient::test_get_databases
+python -m pytest tests/unit/test_api.py::TestTreasureDataClient::test_get_databases
 
 # Run direct MCP integration tests
-uv run -m pytest tests/integration/test_direct_mcp.py
-
-# Alternatively, using the virtual environment directly:
-# Activate virtual environment
-source .venv/bin/activate
-
-# Run tests
-python -m pytest
+python -m pytest tests/integration/test_direct_mcp.py
 
 ### Test Structure
 
@@ -353,16 +332,13 @@ The tests are organized as follows:
 The project uses Black and isort for code formatting:
 
 ```bash
-# Using uv (recommended):
+# Install code formatting tools
+pip install black isort
+
 # Format code with Black
-uv run -m black td_mcp_server tests
+python -m black td_mcp_server tests
 
 # Sort imports with isort
-uv run -m isort td_mcp_server tests
-
-# Alternatively, using the virtual environment:
-source .venv/bin/activate
-python -m black td_mcp_server tests
 python -m isort td_mcp_server tests
 ```
 
@@ -371,10 +347,9 @@ python -m isort td_mcp_server tests
 You can run static type checking with mypy:
 
 ```bash
-# Using uv (recommended):
-uv run -m mypy td_mcp_server
+# Install mypy
+pip install mypy
 
-# Alternatively, using the virtual environment:
-source .venv/bin/activate
+# Run type checking
 python -m mypy td_mcp_server
 ```
