@@ -6,11 +6,11 @@ This module provides a FastMCP server for Treasure Data API.
 import os
 import sys
 import traceback
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from mcp.server.fastmcp import FastMCP
 
-from .api import TreasureDataClient, Database
+from .api import TreasureDataClient, Database, Table
 
 
 # Initialize FastMCP server
@@ -76,6 +76,54 @@ async def td_get_database(database_name: str) -> Dict[str, Any]:
         else:
             return {
                 "error": f"Database '{database_name}' not found."
+            }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
+@mcp.tool()
+async def td_list_tables(database_name: str, verbose: bool = False) -> Dict[str, Any]:
+    """Get all tables in a specific Treasure Data database.
+    
+    Args:
+        database_name: The name of the database to retrieve tables from
+        verbose: If True, return full table details; if False, return only table names (default)
+    """
+    api_key = os.environ.get("TD_API_KEY")
+    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
+    
+    if not api_key:
+        return {
+            "error": "TD_API_KEY environment variable is not set"
+        }
+    
+    try:
+        client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
+        
+        # First, verify that the database exists
+        database = client.get_database(database_name)
+        if not database:
+            return {
+                "error": f"Database '{database_name}' not found."
+            }
+        
+        # Get tables for the database
+        tables = client.get_tables(database_name)
+        
+        if verbose:
+            # Return full table details
+            return {
+                "database": database_name,
+                "tables": [table.model_dump() for table in tables]
+            }
+        else:
+            # Return only table names
+            return {
+                "database": database_name,
+                "tables": [table.name for table in tables]
             }
     except Exception as e:
         return {

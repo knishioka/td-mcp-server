@@ -8,7 +8,7 @@ with functions to retrieve database listings and other information.
 import os
 from typing import Dict, List, Optional, Union, Any
 import requests
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Database(BaseModel):
@@ -20,6 +20,23 @@ class Database(BaseModel):
     organization: Optional[str] = None
     permission: str
     delete_protected: bool
+
+
+class Table(BaseModel):
+    """Model representing a Treasure Data table."""
+    id: int
+    name: str
+    estimated_storage_size: int
+    counter_updated_at: str
+    last_log_timestamp: Optional[str] = None
+    delete_protected: bool
+    created_at: str
+    updated_at: str
+    type: str
+    include_v: bool
+    count: int
+    table_schema: Optional[str] = Field(None, alias="schema")
+    expire_days: Optional[int] = None
 
 
 class TreasureDataClient:
@@ -110,3 +127,19 @@ class TreasureDataClient:
             if db.name == database_name:
                 return db
         return None
+        
+    def get_tables(self, database_name: str) -> List[Table]:
+        """
+        Retrieve a list of all tables in a specific database.
+        
+        Args:
+            database_name: The name of the database to retrieve tables from
+            
+        Returns:
+            A list of Table objects
+            
+        Raises:
+            requests.HTTPError: If the API returns an error response
+        """
+        response = self._make_request("GET", f"table/list/{database_name}")
+        return [Table(**table) for table in response.get("tables", [])]

@@ -8,7 +8,7 @@ import sys
 import json
 import argparse
 from typing import Optional, List, Dict, Any
-from .api import TreasureDataClient, Database
+from .api import TreasureDataClient, Database, Table
 
 
 def list_databases(api_key: Optional[str] = None, endpoint: str = "api.treasuredata.com", 
@@ -100,6 +100,66 @@ def get_database(database_name: str, api_key: Optional[str] = None,
         sys.exit(1)
 
 
+def list_tables(database_name: str, api_key: Optional[str] = None, 
+                endpoint: str = "api.treasuredata.com", format_output: str = "table", 
+                verbose: bool = False) -> None:
+    """
+    List all tables in a specific database.
+    
+    Args:
+        database_name: Name of the database to retrieve tables from
+        api_key: Treasure Data API key (if not provided, uses TD_API_KEY env var)
+        endpoint: API endpoint to use
+        format_output: Output format (table or json)
+        verbose: If True, show all table details; if False, show only names
+    """
+    try:
+        client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
+        tables = client.get_tables(database_name)
+        
+        if format_output == "json":
+            # Output as JSON
+            if verbose:
+                table_list = [table.model_dump() for table in tables]
+            else:
+                table_list = [table.name for table in tables]
+            print(json.dumps(table_list, indent=2))
+        else:
+            # Output as table
+            if not tables:
+                print(f"No tables found in database '{database_name}'.", file=sys.stderr)
+                return
+                
+            if verbose:
+                # Format as a detailed table
+                headers = ["Name", "Type", "Count", "Size (bytes)", "Created", "Updated", "Protected"]
+                
+                # Print headers
+                print(" | ".join(headers))
+                print("-" * (sum(len(h) for h in headers) + len(headers) * 3 - 2))
+                
+                # Print each row
+                for table in tables:
+                    row = [
+                        table.name,
+                        table.type,
+                        str(table.count),
+                        str(table.estimated_storage_size),
+                        table.created_at,
+                        table.updated_at,
+                        "Yes" if table.delete_protected else "No"
+                    ]
+                    print(" | ".join(row))
+            else:
+                # Only show table names
+                for table in tables:
+                    print(table.name)
+    
+    except Exception as e:
+        print(f"Error: {str(e)}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main_list_db():
     """Entry point for the list-db command."""
     parser = argparse.ArgumentParser(description="List all databases in your Treasure Data account")
@@ -128,6 +188,23 @@ def main_get_db():
     args = parser.parse_args()
     get_database(database_name=args.database_name, api_key=args.api_key, 
                  endpoint=args.endpoint, format_output=args.format_output)
+
+
+def main_list_tables():
+    """Entry point for the list-tables command."""
+    parser = argparse.ArgumentParser(description="List all tables in a specific database")
+    parser.add_argument("database_name", help="Name of the database to retrieve tables from")
+    parser.add_argument("--api-key", help="Treasure Data API key (if not provided, uses TD_API_KEY env var)")
+    parser.add_argument("--endpoint", default="api.treasuredata.com", 
+                      help="API endpoint (default: api.treasuredata.com for US, use api.treasuredata.co.jp for Japan)")
+    parser.add_argument("--format", dest="format_output", choices=["table", "json"], default="table", 
+                      help="Output format (table or json)")
+    parser.add_argument("--verbose", "-v", action="store_true", 
+                      help="Show detailed information about tables (default: show only names)")
+    
+    args = parser.parse_args()
+    list_tables(database_name=args.database_name, api_key=args.api_key, endpoint=args.endpoint, 
+                format_output=args.format_output, verbose=args.verbose)
 
 
 def main_td_mcp():

@@ -60,6 +60,22 @@ uv run td-get-db my_database_name
 uv run td-get-db my_database_name --format table
 ```
 
+#### List tables in a database
+
+```bash
+# Show only table names (default)
+uv run td-list-tables my_database_name
+
+# Show detailed table information
+uv run td-list-tables my_database_name --verbose
+
+# Get only table names in JSON format
+uv run td-list-tables my_database_name --format json
+
+# Get detailed table information in JSON format
+uv run td-list-tables my_database_name --format json --verbose
+```
+
 ### Python API
 
 You can also use the client directly in your Python code:
@@ -84,6 +100,11 @@ if db:
     print(f"Found database: {db.name}")
 else:
     print("Database not found")
+
+# Get all tables in a database
+tables = client.get_tables("my_database_name")
+for table in tables:
+    print(f"Table: {table.name}, Type: {table.type}, Count: {table.count}")
 ```
 
 ## API Endpoints
@@ -174,6 +195,7 @@ To configure this MCP server for use with Claude Code:
 4. When using Claude Code in a project with this configuration, you'll have access to the following MCP tools:
    - `mcp__td_list_databases`: List all databases in your Treasure Data account (only names by default, add `verbose=True` for full details)
    - `mcp__td_get_database`: Get information about a specific database
+   - `mcp__td_list_tables`: List all tables in a specific database (only names by default, add `verbose=True` for full details)
 
 ### Setting up with Claude Desktop
 
@@ -223,10 +245,17 @@ Once configured, you can use commands like:
 /mcp td_list_databases verbose=True
 ```
 
-or
+```
+# Get information about a specific database
+/mcp td_get_database my_database_name
+```
 
 ```
-/mcp td_get_database my_database_name
+# Get only table names in a database (default)
+/mcp td_list_tables database_name=my_database_name
+
+# Get detailed information about tables in a database
+/mcp td_list_tables database_name=my_database_name verbose=True
 ```
 
 ## Development
