@@ -294,7 +294,7 @@ Once configured, you can use commands like:
 
 ## Development
 
-To set up the development environment:
+### Setting Up the Development Environment
 
 ```bash
 # Clone the repository
@@ -303,7 +303,50 @@ cd td-mcp-server
 
 # Install dev dependencies
 pip install -e ".[dev]"
+```
 
-# Run tests
+### Running Tests
+
+This project uses pytest for unit testing. To run the tests:
+
+```bash
+# Run all tests
 pytest
+
+# Run tests with coverage report
+pytest --cov=td_mcp_server
+
+# Run tests for a specific module
+pytest tests/unit/test_api.py
+
+# Run a specific test
+pytest tests/unit/test_api.py::TestTreasureDataClient::test_get_databases
+```
+
+### Test Structure
+
+The tests are organized as follows:
+
+- `tests/unit/test_api.py` - Tests for the Treasure Data API client
+- `tests/unit/test_cli_api.py` - Tests for the CLI commands
+- `tests/unit/test_mcp_impl.py` - Tests for the MCP tools implementation
+
+### Code Formatting
+
+The project uses Black and isort for code formatting:
+
+```bash
+# Format code with Black
+black td_mcp_server tests
+
+# Sort imports with isort
+isort td_mcp_server tests
+```
+
+### Type Checking
+
+You can run static type checking with mypy:
+
+```bash
+mypy td_mcp_server
 ```
