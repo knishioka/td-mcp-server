@@ -1,0 +1,14 @@
+{
+  "plugins": [
+    {
+      "name": "td-mcp",
+      "description": "Treasure Data API plugin for database management",
+      "command": {
+        "args": ["python", "-m", "td_mcp_server", "--mcp-server"],
+        "env": {
+          "TD_API_KEY": "${TD_API_KEY}"
+        }
+      }
+    }
+  ]
+}
