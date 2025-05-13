@@ -104,6 +104,8 @@ pytest tests/unit/test_api.py::TestTreasureDataClient::test_get_databases
 ### Code Formatting, Linting, and Type Checking
 
 ```bash
+# Using pip
+
 # Format code with Black
 black td_mcp_server tests
 
@@ -124,6 +126,32 @@ pre-commit install
 
 # Run pre-commit on all files
 pre-commit run --all-files
+
+# Using uv
+
+# Install dependencies with uv
+uv pip install -e ".[dev]"
+
+# Format code with Black
+uv pip run black td_mcp_server tests
+
+# Sort imports with isort
+uv pip run isort td_mcp_server tests
+
+# Run linting with Ruff
+uv pip run ruff check td_mcp_server tests
+
+# Run linting and auto-fix with Ruff
+uv pip run ruff check --fix td_mcp_server tests
+
+# Run type checking
+uv pip run mypy td_mcp_server
+
+# Initialize pre-commit (first time only)
+uv pip run pre-commit install
+
+# Run pre-commit on all files
+uv pip run pre-commit run --all-files
 ```
 
 ## Architecture

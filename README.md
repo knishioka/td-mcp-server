@@ -333,6 +333,8 @@ The tests are organized as follows:
 
 The project uses Black, isort, and ruff for code formatting and linting, with pre-commit hooks to ensure code quality:
 
+#### Using pip
+
 ```bash
 # Install development tools
 pip install black isort ruff pre-commit
@@ -354,6 +356,31 @@ pre-commit install
 
 # Run all pre-commit hooks on all files
 pre-commit run --all-files
+```
+
+#### Using uv
+
+```bash
+# Install development dependencies
+uv pip install -e ".[dev]"
+
+# Format code with Black
+uv pip run black td_mcp_server tests
+
+# Sort imports with isort
+uv pip run isort td_mcp_server tests
+
+# Run linting with Ruff
+uv pip run ruff check td_mcp_server tests
+
+# Run linting and auto-fix with Ruff
+uv pip run ruff check --fix td_mcp_server tests
+
+# Install pre-commit hooks (do this once)
+uv pip run pre-commit install
+
+# Run all pre-commit hooks on all files
+uv pip run pre-commit run --all-files
 ```
 
 The pre-commit hooks configuration is in `.pre-commit-config.yaml` and includes:
