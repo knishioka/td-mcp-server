@@ -218,7 +218,7 @@ curl -s -H "Authorization: TD1 YOUR_API_KEY" "https://api.treasuredata.com/v3/jo
   "status": "success",
   "created_at": "2023-01-01 00:00:00 UTC",
   "updated_at": "2023-01-01 00:00:09 UTC",
-  "start_at": "2023-01-01 00:00:00 UTC", 
+  "start_at": "2023-01-01 00:00:00 UTC",
   "end_at": "2023-01-01 00:00:09 UTC"
 }
 ```

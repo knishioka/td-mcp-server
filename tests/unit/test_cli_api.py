@@ -3,19 +3,20 @@ Unit tests for the CLI commands.
 """
 
 import json
-import pytest
-from unittest.mock import patch, MagicMock
 import sys
 from io import StringIO
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from td_mcp_server.api import Database, Table
 from td_mcp_server.cli_api import (
-    list_databases, 
-    get_database, 
+    get_database,
+    list_databases,
     list_tables,
-    main_list_databases,
     main_get_database,
-    main_list_tables
+    main_list_databases,
+    main_list_tables,
 )
 
 
@@ -32,7 +33,7 @@ class TestCliApi:
                 count=3,
                 organization=None,
                 permission="administrator",
-                delete_protected=False
+                delete_protected=False,
             ),
             Database(
                 name="db2",
@@ -41,7 +42,7 @@ class TestCliApi:
                 count=5,
                 organization=None,
                 permission="administrator",
-                delete_protected=True
+                delete_protected=True,
             ),
         ]
         self.mock_tables = [
@@ -57,8 +58,8 @@ class TestCliApi:
                 type="log",
                 include_v=True,
                 count=100,
-                schema="[[\"id\",\"string\"],[\"name\",\"string\"]]",
-                expire_days=None
+                schema='[["id","string"],["name","string"]]',
+                expire_days=None,
             ),
             Table(
                 id=5678,
@@ -72,12 +73,12 @@ class TestCliApi:
                 type="log",
                 include_v=True,
                 count=200,
-                schema="[[\"id\",\"string\"],[\"value\",\"integer\"]]",
-                expire_days=30
-            )
+                schema='[["id","string"],["value","integer"]]',
+                expire_days=30,
+            ),
         ]
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_databases_default(self, mock_client_class):
         """Test list_databases with default parameters."""
         # Setup the mock
@@ -99,9 +100,11 @@ class TestCliApi:
         assert "db1" in output
         assert "db2" in output
         assert mock_client.get_databases.called
-        mock_client.get_databases.assert_called_with(limit=30, offset=0, all_results=False)
+        mock_client.get_databases.assert_called_with(
+            limit=30, offset=0, all_results=False
+        )
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_databases_verbose(self, mock_client_class):
         """Test list_databases with verbose=True."""
         # Setup the mock
@@ -133,7 +136,7 @@ class TestCliApi:
         assert "Yes" in output  # delete_protected for db2
         assert mock_client.get_databases.called
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_databases_json(self, mock_client_class):
         """Test list_databases with json format."""
         # Setup the mock
@@ -145,7 +148,9 @@ class TestCliApi:
         sys.stdout = stdout
 
         # Call the function
-        list_databases(api_key="test_key", endpoint="api.example.com", format_output="json")
+        list_databases(
+            api_key="test_key", endpoint="api.example.com", format_output="json"
+        )
 
         # Reset stdout
         sys.stdout = sys.__stdout__
@@ -155,7 +160,7 @@ class TestCliApi:
         assert json.loads(output) == ["db1", "db2"]
         assert mock_client.get_databases.called
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_databases_json_verbose(self, mock_client_class):
         """Test list_databases with json format and verbose=True."""
         # Setup the mock
@@ -167,7 +172,12 @@ class TestCliApi:
         sys.stdout = stdout
 
         # Call the function
-        list_databases(api_key="test_key", endpoint="api.example.com", format_output="json", verbose=True)
+        list_databases(
+            api_key="test_key",
+            endpoint="api.example.com",
+            format_output="json",
+            verbose=True,
+        )
 
         # Reset stdout
         sys.stdout = sys.__stdout__
@@ -182,7 +192,7 @@ class TestCliApi:
         assert db_list[1]["count"] == 5
         assert mock_client.get_databases.called
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_databases_pagination(self, mock_client_class):
         """Test list_databases with pagination parameters."""
         # Setup the mock
@@ -193,9 +203,11 @@ class TestCliApi:
         list_databases(api_key="test_key", limit=10, offset=5, all_results=False)
 
         # Verify that pagination parameters were passed correctly
-        mock_client.get_databases.assert_called_with(limit=10, offset=5, all_results=False)
+        mock_client.get_databases.assert_called_with(
+            limit=10, offset=5, all_results=False
+        )
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_databases_all_results(self, mock_client_class):
         """Test list_databases with all_results=True."""
         # Setup the mock
@@ -206,9 +218,11 @@ class TestCliApi:
         list_databases(api_key="test_key", all_results=True)
 
         # Verify that all_results was passed correctly
-        mock_client.get_databases.assert_called_with(limit=30, offset=0, all_results=True)
+        mock_client.get_databases.assert_called_with(
+            limit=30, offset=0, all_results=True
+        )
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_get_database(self, mock_client_class):
         """Test get_database function."""
         # Setup the mock
@@ -233,7 +247,7 @@ class TestCliApi:
         assert mock_client.get_database.called
         mock_client.get_database.assert_called_with("db1")
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_get_database_table_format(self, mock_client_class):
         """Test get_database function with table format."""
         # Setup the mock
@@ -257,7 +271,7 @@ class TestCliApi:
         assert "Delete Protected: False" in output
         assert mock_client.get_database.called
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_get_database_not_found(self, mock_client_class):
         """Test get_database when database is not found."""
         # Setup the mock
@@ -277,10 +291,10 @@ class TestCliApi:
         output = stderr.getvalue().strip()
 
         # Verify the error message
-        assert "Database 'nonexistent' not found." in output
+        assert "Database 'nonexistent' not found" in output
         assert mock_client.get_database.called
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_tables_default(self, mock_client_class):
         """Test list_tables with default parameters."""
         # Setup the mock
@@ -302,9 +316,11 @@ class TestCliApi:
         assert "table1" in output
         assert "table2" in output
         assert mock_client.get_tables.called
-        mock_client.get_tables.assert_called_with("test_db", limit=30, offset=0, all_results=False)
+        mock_client.get_tables.assert_called_with(
+            "test_db", limit=30, offset=0, all_results=False
+        )
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_tables_verbose(self, mock_client_class):
         """Test list_tables with verbose=True."""
         # Setup the mock
@@ -338,7 +354,7 @@ class TestCliApi:
         assert "200" in output  # count
         assert mock_client.get_tables.called
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_tables_json(self, mock_client_class):
         """Test list_tables with json format."""
         # Setup the mock
@@ -360,7 +376,7 @@ class TestCliApi:
         assert json.loads(output) == ["table1", "table2"]
         assert mock_client.get_tables.called
 
-    @patch('td_mcp_server.cli_api.TreasureDataClient')
+    @patch("td_mcp_server.cli_api.TreasureDataClient")
     def test_list_tables_pagination(self, mock_client_class):
         """Test list_tables with pagination parameters."""
         # Setup the mock
@@ -368,13 +384,21 @@ class TestCliApi:
         mock_client.get_tables.return_value = self.mock_tables
 
         # Call the function with pagination
-        list_tables(database_name="test_db", api_key="test_key", limit=10, offset=5, all_results=False)
+        list_tables(
+            database_name="test_db",
+            api_key="test_key",
+            limit=10,
+            offset=5,
+            all_results=False,
+        )
 
         # Verify that pagination parameters were passed correctly
-        mock_client.get_tables.assert_called_with("test_db", limit=10, offset=5, all_results=False)
+        mock_client.get_tables.assert_called_with(
+            "test_db", limit=10, offset=5, all_results=False
+        )
 
-    @patch('td_mcp_server.cli_api.list_databases')
-    @patch('td_mcp_server.cli_api.argparse.ArgumentParser.parse_args')
+    @patch("td_mcp_server.cli_api.list_databases")
+    @patch("td_mcp_server.cli_api.argparse.ArgumentParser.parse_args")
     def test_main_list_databases(self, mock_parse_args, mock_list_databases):
         """Test main_list_databases function."""
         # Setup mock args
@@ -393,17 +417,17 @@ class TestCliApi:
 
         # Verify the function calls
         mock_list_databases.assert_called_with(
-            api_key="test_key", 
-            endpoint="api.example.com", 
-            format_output="table", 
+            api_key="test_key",
+            endpoint="api.example.com",
+            format_output="table",
             verbose=False,
             limit=20,
             offset=10,
-            all_results=True
+            all_results=True,
         )
 
-    @patch('td_mcp_server.cli_api.get_database')
-    @patch('td_mcp_server.cli_api.argparse.ArgumentParser.parse_args')
+    @patch("td_mcp_server.cli_api.get_database")
+    @patch("td_mcp_server.cli_api.argparse.ArgumentParser.parse_args")
     def test_main_get_database(self, mock_parse_args, mock_get_database):
         """Test main_get_database function."""
         # Setup mock args
@@ -422,11 +446,11 @@ class TestCliApi:
             database_name="test_db",
             api_key="test_key",
             endpoint="api.example.com",
-            format_output="json"
+            format_output="json",
         )
 
-    @patch('td_mcp_server.cli_api.list_tables')
-    @patch('td_mcp_server.cli_api.argparse.ArgumentParser.parse_args')
+    @patch("td_mcp_server.cli_api.list_tables")
+    @patch("td_mcp_server.cli_api.argparse.ArgumentParser.parse_args")
     def test_main_list_tables(self, mock_parse_args, mock_list_tables):
         """Test main_list_tables function."""
         # Setup mock args
@@ -453,5 +477,5 @@ class TestCliApi:
             verbose=True,
             limit=15,
             offset=5,
-            all_results=False
+            all_results=False,
         )

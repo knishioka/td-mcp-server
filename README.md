@@ -219,7 +219,7 @@ To configure this MCP server for use with Claude Desktop:
    ```bash
    # Install the server with Claude Desktop using the MCP CLI
    mcp install /absolute/path/to/td-mcp-server/td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.com"
-   
+
    # For Japan region
    mcp install /absolute/path/to/td-mcp-server/td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.co.jp"
    ```

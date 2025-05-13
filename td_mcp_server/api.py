@@ -6,53 +6,56 @@ with functions to retrieve database listings and other information.
 """
 
 import os
-from typing import Dict, List, Optional, Union, Any
+from typing import Any
+
 import requests
 from pydantic import BaseModel, Field
 
 
 class Database(BaseModel):
     """Model representing a Treasure Data database."""
+
     name: str
     created_at: str
     updated_at: str
     count: int
-    organization: Optional[str] = None
+    organization: str | None = None
     permission: str
     delete_protected: bool
 
 
 class Table(BaseModel):
     """Model representing a Treasure Data table."""
+
     id: int
     name: str
     estimated_storage_size: int
     counter_updated_at: str
-    last_log_timestamp: Optional[str] = None
+    last_log_timestamp: str | None = None
     delete_protected: bool
     created_at: str
     updated_at: str
     type: str
     include_v: bool
     count: int
-    table_schema: Optional[str] = Field(None, alias="schema")
-    expire_days: Optional[int] = None
+    table_schema: str | None = Field(None, alias="schema")
+    expire_days: int | None = None
 
 
 class TreasureDataClient:
     """Client for interacting with the Treasure Data API."""
-    
+
     def __init__(
-        self, 
-        api_key: Optional[str] = None, 
+        self,
+        api_key: str | None = None,
         endpoint: str = "api.treasuredata.com",
-        api_version: str = "v3"
+        api_version: str = "v3",
     ):
         """
         Initialize a new Treasure Data API client.
-        
+
         Args:
-            api_key: The API key to use for authentication. 
+            api_key: The API key to use for authentication.
                      If not provided, will look for TD_API_KEY environment variable.
             endpoint: The API endpoint to use. Defaults to the US region.
             api_version: The API version to use. Defaults to v3.
@@ -60,9 +63,9 @@ class TreasureDataClient:
         self.api_key = api_key or os.environ.get("TD_API_KEY")
         if not self.api_key:
             raise ValueError(
-                "API key must be provided either as a parameter or via TD_API_KEY environment variable"
+                "API key must be provided via parameter or TD_API_KEY env var"
             )
-            
+
         self.endpoint = endpoint
         self.api_version = api_version
         self.base_url = f"https://{endpoint}/{api_version}"
@@ -70,66 +73,69 @@ class TreasureDataClient:
             "Authorization": f"TD1 {self.api_key}",
             "Content-Type": "application/json",
         }
-    
-    def _make_request(self, method: str, path: str, **kwargs) -> Dict[str, Any]:
+
+    def _make_request(self, method: str, path: str, **kwargs) -> dict[str, Any]:
         """
         Make a request to the Treasure Data API.
-        
+
         Args:
             method: The HTTP method to use (GET, POST, etc.)
             path: The API path to request
             **kwargs: Additional arguments to pass to requests
-            
+
         Returns:
             The JSON response from the API
-            
+
         Raises:
             requests.HTTPError: If the API returns an error response
         """
         url = f"{self.base_url}/{path}"
         response = requests.request(
-            method=method,
-            url=url,
-            headers=self.headers,
-            **kwargs
+            method=method, url=url, headers=self.headers, **kwargs
         )
         response.raise_for_status()
         return response.json()
-    
-    def get_databases(self, limit: int = 30, offset: int = 0, all_results: bool = False) -> List[Database]:
+
+    def get_databases(
+        self, limit: int = 30, offset: int = 0, all_results: bool = False
+    ) -> list[Database]:
         """
         Retrieve a list of databases with pagination support.
-        
+
         Args:
             limit: Maximum number of databases to retrieve (defaults to 30)
             offset: Index to start retrieving from (defaults to 0)
             all_results: If True, retrieves all databases ignoring limit and offset
-            
+
         Returns:
             A list of Database objects
-            
+
         Raises:
             requests.HTTPError: If the API returns an error response
         """
         response = self._make_request("GET", "database/list")
         all_databases = [Database(**db) for db in response.get("databases", [])]
-        
+
         if all_results:
             return all_databases
         else:
-            end_index = offset + limit if offset + limit <= len(all_databases) else len(all_databases)
+            end_index = (
+                offset + limit
+                if offset + limit <= len(all_databases)
+                else len(all_databases)
+            )
             return all_databases[offset:end_index]
-    
-    def get_database(self, database_name: str) -> Optional[Database]:
+
+    def get_database(self, database_name: str) -> Database | None:
         """
         Retrieve information about a specific database.
-        
+
         Args:
             database_name: The name of the database to retrieve
-            
+
         Returns:
             A Database object if found, None otherwise
-            
+
         Raises:
             requests.HTTPError: If the API returns an error response
         """
@@ -138,28 +144,36 @@ class TreasureDataClient:
             if db.name == database_name:
                 return db
         return None
-        
-    def get_tables(self, database_name: str, limit: int = 30, offset: int = 0, all_results: bool = False) -> List[Table]:
+
+    def get_tables(
+        self,
+        database_name: str,
+        limit: int = 30,
+        offset: int = 0,
+        all_results: bool = False,
+    ) -> list[Table]:
         """
         Retrieve a list of tables in a specific database with pagination support.
-        
+
         Args:
             database_name: The name of the database to retrieve tables from
             limit: Maximum number of tables to retrieve (defaults to 30)
             offset: Index to start retrieving from (defaults to 0)
             all_results: If True, retrieves all tables ignoring limit and offset
-            
+
         Returns:
             A list of Table objects
-            
+
         Raises:
             requests.HTTPError: If the API returns an error response
         """
         response = self._make_request("GET", f"table/list/{database_name}")
         all_tables = [Table(**table) for table in response.get("tables", [])]
-        
+
         if all_results:
             return all_tables
         else:
-            end_index = offset + limit if offset + limit <= len(all_tables) else len(all_tables)
+            end_index = (
+                offset + limit if offset + limit <= len(all_tables) else len(all_tables)
+            )
             return all_tables[offset:end_index]

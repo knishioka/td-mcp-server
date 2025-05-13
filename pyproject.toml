@@ -21,6 +21,8 @@ dev = [
     "black>=23.0.0",
     "isort>=5.12.0",
     "mypy>=1.0.0",
+    "ruff>=0.0.270",
+    "pre-commit>=3.3.0",
 ]
 
 [project.scripts]
@@ -33,3 +35,14 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 addopts = "--cov=td_mcp_server --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "I", "W", "B", "C4", "N", "UP"]
+ignore = []
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+]

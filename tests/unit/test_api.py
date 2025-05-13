@@ -2,12 +2,11 @@
 Unit tests for the Treasure Data API client.
 """
 
-import json
 import pytest
-from unittest.mock import patch, MagicMock
+import requests
 import responses
 
-from td_mcp_server.api import TreasureDataClient, Database, Table
+from td_mcp_server.api import Database, Table, TreasureDataClient
 
 
 class TestTreasureDataClient:
@@ -26,7 +25,7 @@ class TestTreasureDataClient:
                 "count": 3,
                 "organization": None,
                 "permission": "administrator",
-                "delete_protected": False
+                "delete_protected": False,
             },
             {
                 "name": "db2",
@@ -35,7 +34,7 @@ class TestTreasureDataClient:
                 "count": 5,
                 "organization": None,
                 "permission": "administrator",
-                "delete_protected": True
+                "delete_protected": True,
             },
             {
                 "name": "db3",
@@ -44,8 +43,8 @@ class TestTreasureDataClient:
                 "count": 0,
                 "organization": None,
                 "permission": "administrator",
-                "delete_protected": False
-            }
+                "delete_protected": False,
+            },
         ]
         self.mock_tables = [
             {
@@ -60,8 +59,8 @@ class TestTreasureDataClient:
                 "type": "log",
                 "include_v": True,
                 "count": 100,
-                "schema": "[[\"id\",\"string\"],[\"name\",\"string\"]]",
-                "expire_days": None
+                "schema": '[["id","string"],["name","string"]]',
+                "expire_days": None,
             },
             {
                 "id": 5678,
@@ -75,9 +74,9 @@ class TestTreasureDataClient:
                 "type": "log",
                 "include_v": True,
                 "count": 200,
-                "schema": "[[\"id\",\"string\"],[\"value\",\"integer\"]]",
-                "expire_days": 30
-            }
+                "schema": '[["id","string"],["value","integer"]]',
+                "expire_days": 30,
+            },
         ]
 
     def test_init(self):
@@ -109,7 +108,7 @@ class TestTreasureDataClient:
             responses.GET,
             f"https://{self.endpoint}/v3/database/list",
             json={"databases": self.mock_databases},
-            status=200
+            status=200,
         )
 
         # Call the method
@@ -132,7 +131,7 @@ class TestTreasureDataClient:
             responses.GET,
             f"https://{self.endpoint}/v3/database/list",
             json={"databases": self.mock_databases},
-            status=200
+            status=200,
         )
 
         # Test with limit and offset
@@ -158,7 +157,7 @@ class TestTreasureDataClient:
             responses.GET,
             f"https://{self.endpoint}/v3/database/list",
             json={"databases": self.mock_databases},
-            status=200
+            status=200,
         )
 
         # Test existing database
@@ -176,13 +175,13 @@ class TestTreasureDataClient:
     def test_get_tables(self):
         """Test get_tables method."""
         database_name = "test_db"
-        
+
         # Mock the API response
         responses.add(
             responses.GET,
             f"https://{self.endpoint}/v3/table/list/{database_name}",
             json={"tables": self.mock_tables},
-            status=200
+            status=200,
         )
 
         # Call the method
@@ -200,13 +199,13 @@ class TestTreasureDataClient:
     def test_get_tables_with_pagination(self):
         """Test get_tables method with pagination."""
         database_name = "test_db"
-        
+
         # Mock the API response
         responses.add(
             responses.GET,
             f"https://{self.endpoint}/v3/table/list/{database_name}",
             json={"tables": self.mock_tables},
-            status=200
+            status=200,
         )
 
         # Test with limit and offset
@@ -230,9 +229,9 @@ class TestTreasureDataClient:
             responses.GET,
             f"https://{self.endpoint}/v3/error",
             json={"error": "Something went wrong"},
-            status=500
+            status=500,
         )
 
         # Verify that exception is raised
-        with pytest.raises(Exception):
+        with pytest.raises(requests.exceptions.HTTPError):
             self.client._make_request("GET", "error")

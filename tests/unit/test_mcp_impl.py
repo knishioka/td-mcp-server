@@ -3,12 +3,12 @@ Unit tests for the MCP implementation.
 """
 
 import os
-import json
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 from td_mcp_server.api import Database, Table
-from td_mcp_server.mcp_impl import td_list_databases, td_get_database, td_list_tables
+from td_mcp_server.mcp_impl import td_get_database, td_list_databases, td_list_tables
 
 
 class TestMCPImplementation:
@@ -24,7 +24,7 @@ class TestMCPImplementation:
                 count=3,
                 organization=None,
                 permission="administrator",
-                delete_protected=False
+                delete_protected=False,
             ),
             Database(
                 name="db2",
@@ -33,7 +33,7 @@ class TestMCPImplementation:
                 count=5,
                 organization=None,
                 permission="administrator",
-                delete_protected=True
+                delete_protected=True,
             ),
         ]
         self.mock_tables = [
@@ -49,8 +49,8 @@ class TestMCPImplementation:
                 type="log",
                 include_v=True,
                 count=100,
-                schema="[[\"id\",\"string\"],[\"name\",\"string\"]]",
-                expire_days=None
+                schema='[["id","string"],["name","string"]]',
+                expire_days=None,
             ),
             Table(
                 id=5678,
@@ -64,14 +64,16 @@ class TestMCPImplementation:
                 type="log",
                 include_v=True,
                 count=200,
-                schema="[[\"id\",\"string\"],[\"value\",\"integer\"]]",
-                expire_days=30
-            )
+                schema='[["id","string"],["value","integer"]]',
+                expire_days=30,
+            ),
         ]
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_databases_default(self, mock_client_class):
         """Test td_list_databases with default parameters."""
         # Setup the mock
@@ -85,11 +87,15 @@ class TestMCPImplementation:
         assert "databases" in result
         assert result["databases"] == ["db1", "db2"]
         assert mock_client.get_databases.called
-        mock_client.get_databases.assert_called_with(limit=30, offset=0, all_results=False)
+        mock_client.get_databases.assert_called_with(
+            limit=30, offset=0, all_results=False
+        )
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_databases_verbose(self, mock_client_class):
         """Test td_list_databases with verbose=True."""
         # Setup the mock
@@ -109,8 +115,10 @@ class TestMCPImplementation:
         assert mock_client.get_databases.called
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_databases_pagination(self, mock_client_class):
         """Test td_list_databases with pagination parameters."""
         # Setup the mock
@@ -121,11 +129,15 @@ class TestMCPImplementation:
         await td_list_databases(limit=10, offset=5, all_results=False)
 
         # Verify the function calls
-        mock_client.get_databases.assert_called_with(limit=10, offset=5, all_results=False)
+        mock_client.get_databases.assert_called_with(
+            limit=10, offset=5, all_results=False
+        )
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_databases_all_results(self, mock_client_class):
         """Test td_list_databases with all_results=True."""
         # Setup the mock
@@ -136,15 +148,21 @@ class TestMCPImplementation:
         await td_list_databases(all_results=True)
 
         # Verify the function calls
-        mock_client.get_databases.assert_called_with(limit=30, offset=0, all_results=True)
+        mock_client.get_databases.assert_called_with(
+            limit=30, offset=0, all_results=True
+        )
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_databases_no_api_key(self, mock_client_class):
         """Test td_list_databases with no API key."""
         # Remove the API key from the environment
-        with patch.dict(os.environ, {"TD_API_KEY": "", "TD_ENDPOINT": "api.example.com"}):
+        with patch.dict(
+            os.environ, {"TD_API_KEY": "", "TD_ENDPOINT": "api.example.com"}
+        ):
             # Call the MCP function
             result = await td_list_databases()
 
@@ -154,8 +172,10 @@ class TestMCPImplementation:
             assert not mock_client_class.called
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_get_database(self, mock_client_class):
         """Test td_get_database function."""
         # Setup the mock
@@ -172,8 +192,10 @@ class TestMCPImplementation:
         mock_client.get_database.assert_called_with("db1")
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_get_database_not_found(self, mock_client_class):
         """Test td_get_database when database is not found."""
         # Setup the mock
@@ -185,12 +207,14 @@ class TestMCPImplementation:
 
         # Verify the result
         assert "error" in result
-        assert "Database 'nonexistent' not found." in result["error"]
+        assert "Database 'nonexistent' not found" in result["error"]
         assert mock_client.get_database.called
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_tables_default(self, mock_client_class):
         """Test td_list_tables with default parameters."""
         # Setup the mock
@@ -207,11 +231,15 @@ class TestMCPImplementation:
         assert result["database"] == "db1"
         assert result["tables"] == ["table1", "table2"]
         assert mock_client.get_tables.called
-        mock_client.get_tables.assert_called_with("db1", limit=30, offset=0, all_results=False)
+        mock_client.get_tables.assert_called_with(
+            "db1", limit=30, offset=0, all_results=False
+        )
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_tables_verbose(self, mock_client_class):
         """Test td_list_tables with verbose=True."""
         # Setup the mock
@@ -234,8 +262,10 @@ class TestMCPImplementation:
         assert mock_client.get_tables.called
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_tables_pagination(self, mock_client_class):
         """Test td_list_tables with pagination parameters."""
         # Setup the mock
@@ -247,11 +277,15 @@ class TestMCPImplementation:
         await td_list_tables(database_name="db1", limit=10, offset=5, all_results=False)
 
         # Verify the function calls
-        mock_client.get_tables.assert_called_with("db1", limit=10, offset=5, all_results=False)
+        mock_client.get_tables.assert_called_with(
+            "db1", limit=10, offset=5, all_results=False
+        )
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_tables_all_results(self, mock_client_class):
         """Test td_list_tables with all_results=True."""
         # Setup the mock
@@ -263,11 +297,15 @@ class TestMCPImplementation:
         await td_list_tables(database_name="db1", all_results=True)
 
         # Verify the function calls
-        mock_client.get_tables.assert_called_with("db1", limit=30, offset=0, all_results=True)
+        mock_client.get_tables.assert_called_with(
+            "db1", limit=30, offset=0, all_results=True
+        )
 
     @pytest.mark.asyncio
-    @patch('td_mcp_server.mcp_impl.TreasureDataClient')
-    @patch.dict(os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"})
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
     async def test_td_list_tables_database_not_found(self, mock_client_class):
         """Test td_list_tables when database is not found."""
         # Setup the mock
@@ -279,5 +317,5 @@ class TestMCPImplementation:
 
         # Verify the result
         assert "error" in result
-        assert "Database 'nonexistent' not found." in result["error"]
+        assert "Database 'nonexistent' not found" in result["error"]
         assert not mock_client.get_tables.called

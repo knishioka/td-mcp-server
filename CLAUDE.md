@@ -133,7 +133,7 @@ The codebase is structured around the following key components:
 
 #### Core MCP Tools (`td_mcp_server/mcp_impl.py`)
 - Implements the FastMCP server: `mcp = FastMCP("treasure-data")`
-- MCP tools: `td_list_databases`, `td_get_database`, `td_list_tables` 
+- MCP tools: `td_list_databases`, `td_get_database`, `td_list_tables`
 - All tools are async functions with proper type annotations
 - Tools read API credentials from environment variables: `TD_API_KEY`, `TD_ENDPOINT`
 
@@ -145,7 +145,7 @@ The codebase is structured around the following key components:
 ### 4. Tests
 
 - Unit tests for API client: `tests/unit/test_api.py`
-- Unit tests for CLI commands: `tests/unit/test_cli_api.py` 
+- Unit tests for CLI commands: `tests/unit/test_cli_api.py`
 - Unit tests for MCP tools: `tests/unit/test_mcp_impl.py`
 
 ## Data Flow
