@@ -12,19 +12,23 @@ from .api import TreasureDataClient, Database, Table
 
 
 def list_databases(api_key: Optional[str] = None, endpoint: str = "api.treasuredata.com", 
-                   format_output: str = "table", verbose: bool = False) -> None:
+                   format_output: str = "table", verbose: bool = False,
+                   limit: int = 30, offset: int = 0, all_results: bool = False) -> None:
     """
-    List all databases in your Treasure Data account.
+    List databases in your Treasure Data account with pagination support.
     
     Args:
         api_key: Treasure Data API key (if not provided, uses TD_API_KEY env var)
         endpoint: API endpoint to use
         format_output: Output format (table or json)
         verbose: If True, show all database details; if False, show only names
+        limit: Maximum number of databases to retrieve (defaults to 30)
+        offset: Index to start retrieving from (defaults to 0)
+        all_results: If True, retrieves all databases ignoring limit and offset
     """
     try:
         client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
-        databases = client.get_databases()
+        databases = client.get_databases(limit=limit, offset=offset, all_results=all_results)
         
         if format_output == "json":
             # Output as JSON
@@ -102,9 +106,9 @@ def get_database(database_name: str, api_key: Optional[str] = None,
 
 def list_tables(database_name: str, api_key: Optional[str] = None, 
                 endpoint: str = "api.treasuredata.com", format_output: str = "table", 
-                verbose: bool = False) -> None:
+                verbose: bool = False, limit: int = 30, offset: int = 0, all_results: bool = False) -> None:
     """
-    List all tables in a specific database.
+    List tables in a specific database with pagination support.
     
     Args:
         database_name: Name of the database to retrieve tables from
@@ -112,10 +116,13 @@ def list_tables(database_name: str, api_key: Optional[str] = None,
         endpoint: API endpoint to use
         format_output: Output format (table or json)
         verbose: If True, show all table details; if False, show only names
+        limit: Maximum number of tables to retrieve (defaults to 30)
+        offset: Index to start retrieving from (defaults to 0)
+        all_results: If True, retrieves all tables ignoring limit and offset
     """
     try:
         client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
-        tables = client.get_tables(database_name)
+        tables = client.get_tables(database_name, limit=limit, offset=offset, all_results=all_results)
         
         if format_output == "json":
             # Output as JSON
@@ -162,7 +169,7 @@ def list_tables(database_name: str, api_key: Optional[str] = None,
 
 def main_list_db():
     """Entry point for the list-db command."""
-    parser = argparse.ArgumentParser(description="List all databases in your Treasure Data account")
+    parser = argparse.ArgumentParser(description="List databases in your Treasure Data account")
     parser.add_argument("--api-key", help="Treasure Data API key (if not provided, uses TD_API_KEY env var)")
     parser.add_argument("--endpoint", default="api.treasuredata.com", 
                       help="API endpoint (default: api.treasuredata.com for US, use api.treasuredata.co.jp for Japan)")
@@ -170,9 +177,16 @@ def main_list_db():
                       help="Output format (table or json)")
     parser.add_argument("--verbose", "-v", action="store_true", 
                       help="Show detailed information about databases (default: show only names)")
+    parser.add_argument("--limit", type=int, default=30,
+                      help="Maximum number of databases to retrieve (default: 30)")
+    parser.add_argument("--offset", type=int, default=0,
+                      help="Index to start retrieving from (default: 0)")
+    parser.add_argument("--all", action="store_true", dest="all_results",
+                      help="Retrieve all databases ignoring limit and offset")
     
     args = parser.parse_args()
-    list_databases(api_key=args.api_key, endpoint=args.endpoint, format_output=args.format_output, verbose=args.verbose)
+    list_databases(api_key=args.api_key, endpoint=args.endpoint, format_output=args.format_output, 
+                 verbose=args.verbose, limit=args.limit, offset=args.offset, all_results=args.all_results)
 
 
 def main_get_db():
@@ -192,7 +206,7 @@ def main_get_db():
 
 def main_list_tables():
     """Entry point for the list-tables command."""
-    parser = argparse.ArgumentParser(description="List all tables in a specific database")
+    parser = argparse.ArgumentParser(description="List tables in a specific database")
     parser.add_argument("database_name", help="Name of the database to retrieve tables from")
     parser.add_argument("--api-key", help="Treasure Data API key (if not provided, uses TD_API_KEY env var)")
     parser.add_argument("--endpoint", default="api.treasuredata.com", 
@@ -201,10 +215,17 @@ def main_list_tables():
                       help="Output format (table or json)")
     parser.add_argument("--verbose", "-v", action="store_true", 
                       help="Show detailed information about tables (default: show only names)")
+    parser.add_argument("--limit", type=int, default=30,
+                      help="Maximum number of tables to retrieve (default: 30)")
+    parser.add_argument("--offset", type=int, default=0,
+                      help="Index to start retrieving from (default: 0)")
+    parser.add_argument("--all", action="store_true", dest="all_results",
+                      help="Retrieve all tables ignoring limit and offset")
     
     args = parser.parse_args()
     list_tables(database_name=args.database_name, api_key=args.api_key, endpoint=args.endpoint, 
-                format_output=args.format_output, verbose=args.verbose)
+                format_output=args.format_output, verbose=args.verbose, limit=args.limit, 
+                offset=args.offset, all_results=args.all_results)
 
 
 def main_td_mcp():

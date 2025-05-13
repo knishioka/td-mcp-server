@@ -96,10 +96,15 @@ class TreasureDataClient:
         response.raise_for_status()
         return response.json()
     
-    def get_databases(self) -> List[Database]:
+    def get_databases(self, limit: int = 30, offset: int = 0, all_results: bool = False) -> List[Database]:
         """
-        Retrieve a list of all databases.
+        Retrieve a list of databases with pagination support.
         
+        Args:
+            limit: Maximum number of databases to retrieve (defaults to 30)
+            offset: Index to start retrieving from (defaults to 0)
+            all_results: If True, retrieves all databases ignoring limit and offset
+            
         Returns:
             A list of Database objects
             
@@ -107,7 +112,13 @@ class TreasureDataClient:
             requests.HTTPError: If the API returns an error response
         """
         response = self._make_request("GET", "database/list")
-        return [Database(**db) for db in response.get("databases", [])]
+        all_databases = [Database(**db) for db in response.get("databases", [])]
+        
+        if all_results:
+            return all_databases
+        else:
+            end_index = offset + limit if offset + limit <= len(all_databases) else len(all_databases)
+            return all_databases[offset:end_index]
     
     def get_database(self, database_name: str) -> Optional[Database]:
         """
@@ -122,18 +133,21 @@ class TreasureDataClient:
         Raises:
             requests.HTTPError: If the API returns an error response
         """
-        databases = self.get_databases()
+        databases = self.get_databases(all_results=True)
         for db in databases:
             if db.name == database_name:
                 return db
         return None
         
-    def get_tables(self, database_name: str) -> List[Table]:
+    def get_tables(self, database_name: str, limit: int = 30, offset: int = 0, all_results: bool = False) -> List[Table]:
         """
-        Retrieve a list of all tables in a specific database.
+        Retrieve a list of tables in a specific database with pagination support.
         
         Args:
             database_name: The name of the database to retrieve tables from
+            limit: Maximum number of tables to retrieve (defaults to 30)
+            offset: Index to start retrieving from (defaults to 0)
+            all_results: If True, retrieves all tables ignoring limit and offset
             
         Returns:
             A list of Table objects
@@ -142,4 +156,10 @@ class TreasureDataClient:
             requests.HTTPError: If the API returns an error response
         """
         response = self._make_request("GET", f"table/list/{database_name}")
-        return [Table(**table) for table in response.get("tables", [])]
+        all_tables = [Table(**table) for table in response.get("tables", [])]
+        
+        if all_results:
+            return all_tables
+        else:
+            end_index = offset + limit if offset + limit <= len(all_tables) else len(all_tables)
+            return all_tables[offset:end_index]

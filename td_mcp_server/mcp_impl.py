@@ -18,11 +18,14 @@ mcp = FastMCP("treasure-data")
 
 
 @mcp.tool()
-async def td_list_databases(verbose: bool = False) -> Dict[str, Any]:
-    """Get all databases in your Treasure Data account.
+async def td_list_databases(verbose: bool = False, limit: int = 30, offset: int = 0, all_results: bool = False) -> Dict[str, Any]:
+    """Get databases in your Treasure Data account with pagination support.
     
     Args:
         verbose: If True, return full database details; if False, return only database names (default)
+        limit: Maximum number of databases to retrieve (defaults to 30)
+        offset: Index to start retrieving from (defaults to 0)
+        all_results: If True, retrieves all databases ignoring limit and offset
     """
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
@@ -34,7 +37,7 @@ async def td_list_databases(verbose: bool = False) -> Dict[str, Any]:
     
     try:
         client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
-        databases = client.get_databases()
+        databases = client.get_databases(limit=limit, offset=offset, all_results=all_results)
         
         if verbose:
             # Return full database details
@@ -85,12 +88,15 @@ async def td_get_database(database_name: str) -> Dict[str, Any]:
 
 
 @mcp.tool()
-async def td_list_tables(database_name: str, verbose: bool = False) -> Dict[str, Any]:
-    """Get all tables in a specific Treasure Data database.
+async def td_list_tables(database_name: str, verbose: bool = False, limit: int = 30, offset: int = 0, all_results: bool = False) -> Dict[str, Any]:
+    """Get tables in a specific Treasure Data database with pagination support.
     
     Args:
         database_name: The name of the database to retrieve tables from
         verbose: If True, return full table details; if False, return only table names (default)
+        limit: Maximum number of tables to retrieve (defaults to 30)
+        offset: Index to start retrieving from (defaults to 0)
+        all_results: If True, retrieves all tables ignoring limit and offset
     """
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
@@ -111,7 +117,7 @@ async def td_list_tables(database_name: str, verbose: bool = False) -> Dict[str,
             }
         
         # Get tables for the database
-        tables = client.get_tables(database_name)
+        tables = client.get_tables(database_name, limit=limit, offset=offset, all_results=all_results)
         
         if verbose:
             # Return full table details
