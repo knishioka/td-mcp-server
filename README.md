@@ -96,6 +96,23 @@ python -m td_mcp_server --endpoint=api.treasuredata.co.jp list-databases
 
 This server implements the Model Context Protocol (MCP) to provide Claude with access to Treasure Data API functionality.
 
+### Running the MCP Server
+
+You can run the MCP server in several ways:
+
+```bash
+# Using uv run (recommended)
+uv run mcp
+
+# Using Python module
+python -m td_mcp_server --mcp-server
+
+# Using the installed script
+mcp
+```
+
+The server requires a Treasure Data API key, which should be provided via the `TD_API_KEY` environment variable.
+
 ### Setting up with Claude Code
 
 To configure this MCP server for use with Claude Code:
@@ -120,7 +137,7 @@ To configure this MCP server for use with Claude Code:
          "name": "td-mcp",
          "description": "Treasure Data API plugin for database management",
          "command": {
-           "args": ["python", "-m", "td_mcp_server", "--mcp-server"],
+           "args": ["uv", "run", "mcp"],
            "env": {
              "TD_API_KEY": "${TD_API_KEY}"
            }
@@ -143,7 +160,7 @@ To configure this MCP server for use with Claude Desktop:
 2. In Claude Desktop, create a new MCP tool configuration:
    - Go to Settings > MCP Tools > Add New Tool
    - Name: Treasure Data API
-   - Command: `python -m td_mcp_server --mcp-server`
+   - Command: `uv run mcp`
    - Environment variables: Add your `TD_API_KEY` 
 
 3. Save the configuration and restart Claude Desktop
