@@ -134,6 +134,7 @@ async def td_list_projects(
     limit: int = 30,
     offset: int = 0,
     all_results: bool = False,
+    include_system: bool = False,
 ) -> dict[str, Any]:
     """Get workflow projects in your Treasure Data account with pagination support.
 
@@ -146,6 +147,7 @@ async def td_list_projects(
         limit: Maximum number of projects to retrieve (defaults to 30)
         offset: Index to start retrieving from (defaults to 0)
         all_results: If True, retrieves all projects ignoring limit and offset
+        include_system: If True, include system-generated projects (with "sys" metadata)
     """
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
@@ -162,6 +164,12 @@ async def td_list_projects(
         projects = client.get_projects(
             limit=limit, offset=offset, all_results=all_results
         )
+
+        # Filter out system projects (those with "sys" metadata)
+        if not include_system:
+            projects = [
+                p for p in projects if not any(meta.key == "sys" for meta in p.metadata)
+            ]
 
         if verbose:
             # Return full project details
@@ -185,6 +193,9 @@ async def td_get_project(project_id: str) -> dict[str, Any]:
     These projects contain SQL queries and Digdag (.dig) workflow definition files
     that orchestrate data processing tasks. Workflows are used for scheduled jobs,
     ETL processes, and data transformation pipelines within Treasure Data.
+    Note: This method provides basic project metadata. For detailed project contents
+    including SQL queries and workflow definitions, use td_download_project_archive
+    followed by td_list_project_files and td_read_project_file to examine the files.
 
     Args:
         project_id: The ID of the workflow project to retrieve information for

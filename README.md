@@ -76,7 +76,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
 
 4. **td_list_projects**
    ```python
-   td_list_projects(verbose=False, limit=30, offset=0, all_results=False)
+   td_list_projects(verbose=False, limit=30, offset=0, all_results=False, include_system=False)
    ```
    - Get workflow projects in your Treasure Data account with pagination support
    - **Parameters**:
@@ -84,6 +84,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
      - `limit`: Maximum number of projects to retrieve (defaults to 30)
      - `offset`: Index to start retrieving from (defaults to 0)
      - `all_results`: If True, retrieves all projects ignoring limit and offset
+     - `include_system`: If True, include system-generated projects (with "sys" metadata); defaults to False
    - **Examples**:
      ```
      # Get basic project info (default, first 30 projects)
@@ -97,6 +98,9 @@ This MCP server provides the following tools for interacting with Treasure Data:
 
      # Get all projects regardless of the number
      td_list_projects all_results=True
+
+     # Include system-generated projects
+     td_list_projects include_system=True
      ```
 
 5. **td_get_project**
@@ -104,6 +108,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
    td_get_project(project_id)
    ```
    - Get detailed information about a specific workflow project
+   - Note: This provides basic project metadata only. For detailed content and files, use td_download_project_archive followed by td_list_project_files and td_read_project_file
    - **Parameters**:
      - `project_id`: The ID of the workflow project to retrieve information for
    - **Example**:
@@ -117,6 +122,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
    td_download_project_archive(project_id)
    ```
    - Download a project's archive (tar.gz) and return information about the download
+   - Recommended for examining detailed project contents including SQL queries and workflow definitions
    - **Parameters**:
      - `project_id`: The ID of the workflow project to download
    - **Example**:

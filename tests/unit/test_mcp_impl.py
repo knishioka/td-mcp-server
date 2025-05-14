@@ -373,11 +373,10 @@ class TestMCPImplementation:
 
         # Verify the result
         assert "projects" in result
-        assert len(result["projects"]) == 2
+        # Only the non-system project should be included (default behavior)
+        assert len(result["projects"]) == 1
         assert result["projects"][0]["id"] == "123456"
         assert result["projects"][0]["name"] == "demo_content_affinity"
-        assert result["projects"][1]["id"] == "789012"
-        assert result["projects"][1]["name"] == "cdp_audience_123456"
         assert mock_client.get_projects.called
         mock_client.get_projects.assert_called_with(
             limit=30, offset=0, all_results=False
@@ -399,19 +398,17 @@ class TestMCPImplementation:
 
         # Verify the result
         assert "projects" in result
-        assert len(result["projects"]) == 2
-        # Check detailed fields in the first project
+        # Only the non-system project should be included (default behavior)
+        assert len(result["projects"]) == 1
+        # Check detailed fields in the project
         assert result["projects"][0]["id"] == "123456"
         assert result["projects"][0]["name"] == "demo_content_affinity"
         assert result["projects"][0]["revision"] == "abcdef1234567890abcdef1234567890"
         assert result["projects"][0]["created_at"] == "2022-01-01T00:00:00Z"
         assert result["projects"][0]["metadata"] == []
-        # Check detailed fields in the second project
-        assert result["projects"][1]["id"] == "789012"
-        assert result["projects"][1]["name"] == "cdp_audience_123456"
-        assert len(result["projects"][1]["metadata"]) == 3
-        assert result["projects"][1]["metadata"][0]["key"] == "pbp"
-        assert result["projects"][1]["metadata"][0]["value"] == "cdp_audience"
+        # The second project (with "sys" metadata) should be excluded
+        for project in result["projects"]:
+            assert project["id"] != "789012"
         assert mock_client.get_projects.called
 
     @pytest.mark.asyncio
@@ -450,6 +447,65 @@ class TestMCPImplementation:
         # Verify the function calls
         mock_client.get_projects.assert_called_with(
             limit=30, offset=0, all_results=True
+        )
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_list_projects_exclude_system(self, mock_client_class):
+        """Test td_list_projects with system project filtering (default behavior)."""
+        # Setup the mock
+        mock_client = mock_client_class.return_value
+        mock_client.get_projects.return_value = self.mock_projects
+
+        # Call the MCP function (default is include_system=False)
+        result = await td_list_projects()
+
+        # Verify the result
+        assert "projects" in result
+        # Only the first project should be included (the one without "sys" metadata)
+        assert len(result["projects"]) == 1
+        assert result["projects"][0]["id"] == "123456"
+        assert result["projects"][0]["name"] == "demo_content_affinity"
+
+        # The second project (with "sys" metadata) should be excluded
+        for project in result["projects"]:
+            assert project["id"] != "789012"
+
+        assert mock_client.get_projects.called
+        mock_client.get_projects.assert_called_with(
+            limit=30, offset=0, all_results=False
+        )
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_list_projects_include_system(self, mock_client_class):
+        """Test td_list_projects with include_system=True."""
+        # Setup the mock
+        mock_client = mock_client_class.return_value
+        mock_client.get_projects.return_value = self.mock_projects
+
+        # Call the MCP function with include_system=True
+        result = await td_list_projects(include_system=True)
+
+        # Verify the result
+        assert "projects" in result
+        # Both projects should be included
+        assert len(result["projects"]) == 2
+
+        # Check that both projects are in the result
+        project_ids = [p["id"] for p in result["projects"]]
+        assert "123456" in project_ids
+        assert "789012" in project_ids
+
+        assert mock_client.get_projects.called
+        mock_client.get_projects.assert_called_with(
+            limit=30, offset=0, all_results=False
         )
 
     @pytest.mark.asyncio

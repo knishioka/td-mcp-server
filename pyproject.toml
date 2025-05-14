@@ -33,18 +33,20 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.ruff]
 line-length = 88
 target-version = "py311"
-select = ["E", "F", "I", "W", "B", "C4", "N", "UP"]
-ignore = []
 exclude = [
     ".git",
     ".venv",
     "__pycache__",
 ]
 
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "C4", "N", "UP"]
+ignore = []
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["td_mcp_server"]
