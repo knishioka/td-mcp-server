@@ -94,12 +94,10 @@ class TreasureDataClient:
         self.api_version = api_version
         self.base_url = f"https://{endpoint}/{api_version}"
 
-        # Derive workflow endpoint based on region if not provided
+        # Derive workflow endpoint based on the API endpoint if not provided
         if workflow_endpoint is None:
-            if "co.jp" in endpoint:
-                self.workflow_endpoint = "api-workflow.treasuredata.co.jp"
-            else:
-                self.workflow_endpoint = "api-workflow.treasuredata.com"
+            # Simply replace "api" with "api-workflow" in the endpoint
+            self.workflow_endpoint = endpoint.replace("api.", "api-workflow.")
         else:
             self.workflow_endpoint = workflow_endpoint
 

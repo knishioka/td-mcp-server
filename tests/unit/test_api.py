@@ -317,18 +317,31 @@ class TestTreasureDataClient:
         assert len(projects) == 2
 
     def test_workflow_endpoint_derivation(self):
-        """Test workflow endpoint derivation based on region."""
-        # Test US region
+        """Test workflow endpoint derivation based on API endpoint."""
+        # Test US region standard pattern
         client = TreasureDataClient(
             api_key=self.api_key, endpoint="api.treasuredata.com"
         )
         assert client.workflow_endpoint == "api-workflow.treasuredata.com"
 
-        # Test Japan region
+        # Test Japan region pattern
         client = TreasureDataClient(
             api_key=self.api_key, endpoint="api.treasuredata.co.jp"
         )
         assert client.workflow_endpoint == "api-workflow.treasuredata.co.jp"
+        
+        # Test with non-standard region
+        client = TreasureDataClient(
+            api_key=self.api_key, endpoint="api.treasuredata.eu"
+        )
+        assert client.workflow_endpoint == "api-workflow.treasuredata.eu"
+        
+        # Test with different domain structure (non-standard input)
+        client = TreasureDataClient(
+            api_key=self.api_key, endpoint="treasuredata-api.com"
+        )
+        # Should still perform the replacement
+        assert client.workflow_endpoint == "treasuredata-api-workflow.com"
 
         # Test custom endpoint
         custom_endpoint = "custom-workflow.example.com"
