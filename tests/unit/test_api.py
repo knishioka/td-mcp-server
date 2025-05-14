@@ -6,7 +6,7 @@ import pytest
 import requests
 import responses
 
-from td_mcp_server.api import Database, Table, TreasureDataClient
+from td_mcp_server.api import Database, Project, Table, TreasureDataClient
 
 
 class TestTreasureDataClient:
@@ -76,6 +76,34 @@ class TestTreasureDataClient:
                 "count": 200,
                 "schema": '[["id","string"],["value","integer"]]',
                 "expire_days": 30,
+            },
+        ]
+        self.mock_projects = [
+            {
+                "id": "123456",
+                "name": "demo_content_affinity",
+                "revision": "abcdef1234567890abcdef1234567890",
+                "createdAt": "2022-01-01T00:00:00Z",
+                "updatedAt": "2022-01-02T00:00:00Z",
+                "deletedAt": None,
+                "archiveType": "s3",
+                "archiveMd5": "abcdefghijklmnopqrstuvwx==",
+                "metadata": [],
+            },
+            {
+                "id": "789012",
+                "name": "cdp_audience_123456",
+                "revision": "abcdef1234567890abcdef1234567890",
+                "createdAt": "2022-01-01T00:00:00Z",
+                "updatedAt": "2023-01-01T00:00:00Z",
+                "deletedAt": None,
+                "archiveType": "s3",
+                "archiveMd5": "zyxwvutsrqponmlkjihgfed==",
+                "metadata": [
+                    {"key": "pbp", "value": "cdp_audience"},
+                    {"key": "pbp", "value": "cdp_audience_123456"},
+                    {"key": "sys", "value": "cdp_audience"},
+                ],
             },
         ]
 
@@ -235,3 +263,78 @@ class TestTreasureDataClient:
         # Verify that exception is raised
         with pytest.raises(requests.exceptions.HTTPError):
             self.client._make_request("GET", "error")
+
+    @responses.activate
+    def test_get_projects(self):
+        """Test get_projects method."""
+        # Mock the API response
+        workflow_endpoint = "api-workflow.treasuredata.com"
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/projects",
+            json={"projects": self.mock_projects},
+            status=200,
+        )
+
+        # Call the method
+        projects = self.client.get_projects()
+
+        # Verify the results
+        assert len(projects) == 2
+        assert isinstance(projects[0], Project)
+        assert projects[0].id == "123456"
+        assert projects[0].name == "demo_content_affinity"
+        assert projects[1].id == "789012"
+        assert projects[1].name == "cdp_audience_123456"
+        assert len(projects[1].metadata) == 3
+        assert projects[1].metadata[0].key == "pbp"
+        assert projects[1].metadata[0].value == "cdp_audience"
+
+    @responses.activate
+    def test_get_projects_with_pagination(self):
+        """Test get_projects method with pagination."""
+        # Mock the API response
+        workflow_endpoint = "api-workflow.treasuredata.com"
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/projects",
+            json={"projects": self.mock_projects},
+            status=200,
+        )
+
+        # Test with limit and offset
+        projects = self.client.get_projects(limit=1, offset=1)
+        assert len(projects) == 1
+        assert projects[0].id == "789012"
+        assert projects[0].name == "cdp_audience_123456"
+
+        # Test with all_results=True
+        projects = self.client.get_projects(all_results=True)
+        assert len(projects) == 2
+
+        # Test with large limit
+        projects = self.client.get_projects(limit=10)
+        assert len(projects) == 2
+
+    def test_workflow_endpoint_derivation(self):
+        """Test workflow endpoint derivation based on region."""
+        # Test US region
+        client = TreasureDataClient(
+            api_key=self.api_key, endpoint="api.treasuredata.com"
+        )
+        assert client.workflow_endpoint == "api-workflow.treasuredata.com"
+
+        # Test Japan region
+        client = TreasureDataClient(
+            api_key=self.api_key, endpoint="api.treasuredata.co.jp"
+        )
+        assert client.workflow_endpoint == "api-workflow.treasuredata.co.jp"
+
+        # Test custom endpoint
+        custom_endpoint = "custom-workflow.example.com"
+        client = TreasureDataClient(
+            api_key=self.api_key,
+            endpoint="api.example.com",
+            workflow_endpoint=custom_endpoint,
+        )
+        assert client.workflow_endpoint == custom_endpoint

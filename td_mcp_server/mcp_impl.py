@@ -125,6 +125,51 @@ async def td_list_tables(
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
+@mcp.tool()
+async def td_list_projects(
+    verbose: bool = False,
+    limit: int = 30,
+    offset: int = 0,
+    all_results: bool = False,
+) -> dict[str, Any]:
+    """Get workflow projects in your Treasure Data account with pagination support.
+
+    Args:
+        verbose: If True, return full details; if False, return only names (default)
+        limit: Maximum number of projects to retrieve (defaults to 30)
+        offset: Index to start retrieving from (defaults to 0)
+        all_results: If True, retrieves all projects ignoring limit and offset
+    """
+    api_key = os.environ.get("TD_API_KEY")
+    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
+    workflow_endpoint = os.environ.get("TD_WORKFLOW_ENDPOINT")
+
+    if not api_key:
+        return {"error": "TD_API_KEY environment variable is not set"}
+
+    try:
+        client = TreasureDataClient(
+            api_key=api_key, endpoint=endpoint, workflow_endpoint=workflow_endpoint
+        )
+
+        projects = client.get_projects(
+            limit=limit, offset=offset, all_results=all_results
+        )
+
+        if verbose:
+            # Return full project details
+            return {"projects": [project.model_dump() for project in projects]}
+        else:
+            # Return only project names and ids
+            return {
+                "projects": [
+                    {"id": project.id, "name": project.name} for project in projects
+                ]
+            }
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+
 if __name__ == "__main__":
     # Initialize and run the server
     mcp.run(transport="stdio")

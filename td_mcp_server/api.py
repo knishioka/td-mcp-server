@@ -42,6 +42,27 @@ class Table(BaseModel):
     expire_days: int | None = None
 
 
+class Metadata(BaseModel):
+    """Model representing workflow project metadata."""
+
+    key: str
+    value: str
+
+
+class Project(BaseModel):
+    """Model representing a Treasure Data workflow project."""
+
+    id: str
+    name: str
+    revision: str
+    created_at: str = Field(..., alias="createdAt")
+    updated_at: str = Field(..., alias="updatedAt")
+    deleted_at: str | None = Field(None, alias="deletedAt")
+    archive_type: str = Field(..., alias="archiveType")
+    archive_md5: str = Field(..., alias="archiveMd5")
+    metadata: list[Metadata] = []
+
+
 class TreasureDataClient:
     """Client for interacting with the Treasure Data API."""
 
@@ -50,6 +71,7 @@ class TreasureDataClient:
         api_key: str | None = None,
         endpoint: str = "api.treasuredata.com",
         api_version: str = "v3",
+        workflow_endpoint: str | None = None,
     ):
         """
         Initialize a new Treasure Data API client.
@@ -59,6 +81,8 @@ class TreasureDataClient:
                      If not provided, will look for TD_API_KEY environment variable.
             endpoint: The API endpoint to use. Defaults to the US region.
             api_version: The API version to use. Defaults to v3.
+            workflow_endpoint: The workflow API endpoint to use. 
+                             Defaults based on the provided endpoint.
         """
         self.api_key = api_key or os.environ.get("TD_API_KEY")
         if not self.api_key:
@@ -69,18 +93,33 @@ class TreasureDataClient:
         self.endpoint = endpoint
         self.api_version = api_version
         self.base_url = f"https://{endpoint}/{api_version}"
+
+        # Derive workflow endpoint based on region if not provided
+        if workflow_endpoint is None:
+            if "co.jp" in endpoint:
+                self.workflow_endpoint = "api-workflow.treasuredata.co.jp"
+            else:
+                self.workflow_endpoint = "api-workflow.treasuredata.com"
+        else:
+            self.workflow_endpoint = workflow_endpoint
+
+        self.workflow_base_url = f"https://{self.workflow_endpoint}/api"
+
         self.headers = {
             "Authorization": f"TD1 {self.api_key}",
             "Content-Type": "application/json",
         }
 
-    def _make_request(self, method: str, path: str, **kwargs) -> dict[str, Any]:
+    def _make_request(
+        self, method: str, path: str, base_url: str | None = None, **kwargs
+    ) -> dict[str, Any]:
         """
         Make a request to the Treasure Data API.
 
         Args:
             method: The HTTP method to use (GET, POST, etc.)
             path: The API path to request
+            base_url: Optional base URL to use instead of the default
             **kwargs: Additional arguments to pass to requests
 
         Returns:
@@ -89,7 +128,10 @@ class TreasureDataClient:
         Raises:
             requests.HTTPError: If the API returns an error response
         """
-        url = f"{self.base_url}/{path}"
+        if base_url is None:
+            base_url = self.base_url
+
+        url = f"{base_url}/{path}"
         response = requests.request(
             method=method, url=url, headers=self.headers, **kwargs
         )
@@ -177,3 +219,38 @@ class TreasureDataClient:
                 offset + limit if offset + limit <= len(all_tables) else len(all_tables)
             )
             return all_tables[offset:end_index]
+
+    def get_projects(
+        self,
+        limit: int = 30,
+        offset: int = 0,
+        all_results: bool = False,
+    ) -> list[Project]:
+        """
+        Retrieve a list of workflow projects with pagination support.
+
+        Args:
+            limit: Maximum number of projects to retrieve (defaults to 30)
+            offset: Index to start retrieving from (defaults to 0)
+            all_results: If True, retrieves all projects ignoring limit and offset
+
+        Returns:
+            A list of Project objects
+
+        Raises:
+            requests.HTTPError: If the API returns an error response
+        """
+        response = self._make_request(
+            "GET", "projects", base_url=self.workflow_base_url
+        )
+        all_projects = [Project(**project) for project in response.get("projects", [])]
+
+        if all_results:
+            return all_projects
+        else:
+            end_index = (
+                offset + limit
+                if offset + limit <= len(all_projects)
+                else len(all_projects)
+            )
+            return all_projects[offset:end_index]

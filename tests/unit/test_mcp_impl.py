@@ -7,8 +7,13 @@ from unittest.mock import patch
 
 import pytest
 
-from td_mcp_server.api import Database, Table
-from td_mcp_server.mcp_impl import td_get_database, td_list_databases, td_list_tables
+from td_mcp_server.api import Database, Metadata, Project, Table
+from td_mcp_server.mcp_impl import (
+    td_get_database,
+    td_list_databases,
+    td_list_projects,
+    td_list_tables,
+)
 
 
 class TestMCPImplementation:
@@ -66,6 +71,34 @@ class TestMCPImplementation:
                 count=200,
                 schema='[["id","string"],["value","integer"]]',
                 expire_days=30,
+            ),
+        ]
+        self.mock_projects = [
+            Project(
+                id="123456",
+                name="demo_content_affinity",
+                revision="abcdef1234567890abcdef1234567890",
+                createdAt="2022-01-01T00:00:00Z",
+                updatedAt="2022-01-02T00:00:00Z",
+                deletedAt=None,
+                archiveType="s3",
+                archiveMd5="abcdefghijklmnopqrstuvwx==",
+                metadata=[],
+            ),
+            Project(
+                id="789012",
+                name="cdp_audience_123456",
+                revision="abcdef1234567890abcdef1234567890",
+                createdAt="2022-01-01T00:00:00Z",
+                updatedAt="2023-01-01T00:00:00Z",
+                deletedAt=None,
+                archiveType="s3",
+                archiveMd5="zyxwvutsrqponmlkjihgfed==",
+                metadata=[
+                    Metadata(key="pbp", value="cdp_audience"),
+                    Metadata(key="pbp", value="cdp_audience_123456"),
+                    Metadata(key="sys", value="cdp_audience"),
+                ],
             ),
         ]
 
@@ -319,3 +352,111 @@ class TestMCPImplementation:
         assert "error" in result
         assert "Database 'nonexistent' not found" in result["error"]
         assert not mock_client.get_tables.called
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_list_projects_default(self, mock_client_class):
+        """Test td_list_projects with default parameters."""
+        # Setup the mock
+        mock_client = mock_client_class.return_value
+        mock_client.get_projects.return_value = self.mock_projects
+
+        # Call the MCP function
+        result = await td_list_projects()
+
+        # Verify the result
+        assert "projects" in result
+        assert len(result["projects"]) == 2
+        assert result["projects"][0]["id"] == "123456"
+        assert result["projects"][0]["name"] == "demo_content_affinity"
+        assert result["projects"][1]["id"] == "789012"
+        assert result["projects"][1]["name"] == "cdp_audience_123456"
+        assert mock_client.get_projects.called
+        mock_client.get_projects.assert_called_with(
+            limit=30, offset=0, all_results=False
+        )
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_list_projects_verbose(self, mock_client_class):
+        """Test td_list_projects with verbose=True."""
+        # Setup the mock
+        mock_client = mock_client_class.return_value
+        mock_client.get_projects.return_value = self.mock_projects
+
+        # Call the MCP function
+        result = await td_list_projects(verbose=True)
+
+        # Verify the result
+        assert "projects" in result
+        assert len(result["projects"]) == 2
+        # Check detailed fields in the first project
+        assert result["projects"][0]["id"] == "123456"
+        assert result["projects"][0]["name"] == "demo_content_affinity"
+        assert result["projects"][0]["revision"] == "abcdef1234567890abcdef1234567890"
+        assert result["projects"][0]["created_at"] == "2022-01-01T00:00:00Z"
+        assert result["projects"][0]["metadata"] == []
+        # Check detailed fields in the second project
+        assert result["projects"][1]["id"] == "789012"
+        assert result["projects"][1]["name"] == "cdp_audience_123456"
+        assert len(result["projects"][1]["metadata"]) == 3
+        assert result["projects"][1]["metadata"][0]["key"] == "pbp"
+        assert result["projects"][1]["metadata"][0]["value"] == "cdp_audience"
+        assert mock_client.get_projects.called
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_list_projects_pagination(self, mock_client_class):
+        """Test td_list_projects with pagination parameters."""
+        # Setup the mock
+        mock_client = mock_client_class.return_value
+        mock_client.get_projects.return_value = self.mock_projects
+
+        # Call the MCP function
+        await td_list_projects(limit=10, offset=5, all_results=False)
+
+        # Verify the function calls
+        mock_client.get_projects.assert_called_with(
+            limit=10, offset=5, all_results=False
+        )
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_list_projects_all_results(self, mock_client_class):
+        """Test td_list_projects with all_results=True."""
+        # Setup the mock
+        mock_client = mock_client_class.return_value
+        mock_client.get_projects.return_value = self.mock_projects
+
+        # Call the MCP function
+        await td_list_projects(all_results=True)
+
+        # Verify the function calls
+        mock_client.get_projects.assert_called_with(
+            limit=30, offset=0, all_results=True
+        )
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(os.environ, {"TD_API_KEY": "", "TD_ENDPOINT": "api.example.com"})
+    async def test_td_list_projects_no_api_key(self, mock_client_class):
+        """Test td_list_projects with no API key."""
+        # Call the MCP function
+        result = await td_list_projects()
+
+        # Verify the result contains an error message
+        assert "error" in result
+        assert "TD_API_KEY environment variable is not set" in result["error"]
+        assert not mock_client_class.called
