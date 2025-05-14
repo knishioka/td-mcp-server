@@ -50,7 +50,14 @@ class Metadata(BaseModel):
 
 
 class Project(BaseModel):
-    """Model representing a Treasure Data workflow project."""
+    """
+    Model representing a Treasure Data workflow project.
+
+    In Treasure Data, a workflow project is a container for workflow definitions,
+    which typically include SQL queries and Digdag files (.dig) that define
+    the workflow execution steps and dependencies. These workflows are used
+    for data processing, analytics pipelines, and scheduled jobs.
+    """
 
     id: str
     name: str
@@ -227,13 +234,19 @@ class TreasureDataClient:
         """
         Retrieve a list of workflow projects with pagination support.
 
+        Workflow projects in Treasure Data contain workflow definitions used for
+        data processing and analytics. Each project typically includes SQL queries
+        and Digdag (.dig) files that define workflow execution steps and dependencies.
+        These workflows are executed on the Treasure Data platform for scheduled
+        data pipelines, ETL processes, and other automation tasks.
+
         Args:
             limit: Maximum number of projects to retrieve (defaults to 30)
             offset: Index to start retrieving from (defaults to 0)
             all_results: If True, retrieves all projects ignoring limit and offset
 
         Returns:
-            A list of Project objects
+            A list of Project objects representing workflow projects
 
         Raises:
             requests.HTTPError: If the API returns an error response
@@ -257,11 +270,17 @@ class TreasureDataClient:
         """
         Retrieve detailed information about a specific workflow project.
 
+        This method retrieves a specific Treasure Data workflow project by its ID.
+        Workflow projects contain SQL queries and Digdag (.dig) files
+        that define data processing pipelines. These projects are used for scheduling
+        and executing data workflows, ETL processes, and machine learning tasks
+        on Treasure Data.
+
         Args:
-            project_id: The ID of the project to retrieve
+            project_id: The ID of the workflow project to retrieve
 
         Returns:
-            A Project object if found, None otherwise
+            A Project object representing the workflow project if found, None otherwise
 
         Raises:
             requests.HTTPError: If the API returns an error response

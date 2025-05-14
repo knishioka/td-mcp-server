@@ -134,6 +134,10 @@ async def td_list_projects(
 ) -> dict[str, Any]:
     """Get workflow projects in your Treasure Data account with pagination support.
 
+    Workflow projects in Treasure Data are containers for data workflows that include
+    SQL queries and Digdag (.dig) files. These projects define data processing pipelines
+    and scheduled tasks that execute on the Treasure Data platform.
+
     Args:
         verbose: If True, return full details; if False, return only names (default)
         limit: Maximum number of projects to retrieve (defaults to 30)
@@ -174,8 +178,13 @@ async def td_list_projects(
 async def td_get_project(project_id: str) -> dict[str, Any]:
     """Get detailed information about a specific workflow project.
 
+    Retrieves comprehensive details about a Treasure Data workflow project.
+    These projects contain SQL queries and Digdag (.dig) workflow definition files
+    that orchestrate data processing tasks. Workflows are used for scheduled jobs,
+    ETL processes, and data transformation pipelines within Treasure Data.
+
     Args:
-        project_id: The ID of the project to retrieve information for
+        project_id: The ID of the workflow project to retrieve information for
     """
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
