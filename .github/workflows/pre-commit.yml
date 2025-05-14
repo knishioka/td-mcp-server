@@ -22,8 +22,9 @@ jobs:
       run: |
         pip install uv
 
-    - name: Install pre-commit
+    - name: Create virtual environment and install pre-commit
       run: |
+        uv venv
         uv pip install pre-commit
 
     - name: Set up pre-commit cache
