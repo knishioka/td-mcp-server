@@ -3,17 +3,20 @@ Unit tests for the MCP implementation.
 """
 
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from td_mcp_server.api import Database, Metadata, Project, Table
 from td_mcp_server.mcp_impl import (
+    td_download_project_archive,
     td_get_database,
     td_get_project,
     td_list_databases,
+    td_list_project_files,
     td_list_projects,
     td_list_tables,
+    td_read_project_file,
 )
 
 
@@ -500,3 +503,292 @@ class TestMCPImplementation:
         assert "error" in result
         assert "Project with ID 'nonexistent' not found" in result["error"]
         assert mock_client.get_project.called
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch("td_mcp_server.mcp_impl.tempfile.mkdtemp")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_download_project_archive(self, mock_mkdtemp, mock_client_class):
+        """Test td_download_project_archive with successful download."""
+        # Setup mocks
+        mock_temp_dir = "/tmp/td_project_123"
+        mock_mkdtemp.return_value = mock_temp_dir
+
+        mock_client = mock_client_class.return_value
+        mock_client.get_project.return_value = self.mock_projects[0]
+        mock_client.download_project_archive.return_value = True
+
+        # Call the MCP function
+        result = await td_download_project_archive(project_id="123456")
+
+        # Verify the result
+        assert "success" in result
+        assert result["success"] is True
+        assert result["project_id"] == "123456"
+        assert result["project_name"] == "demo_content_affinity"
+        assert result["temp_dir"] == mock_temp_dir
+        expected_path = os.path.join(mock_temp_dir, "project_123456.tar.gz")
+        assert result["archive_path"] == expected_path
+
+        # Verify API client calls
+        mock_client.get_project.assert_called_with("123456")
+        output_path = os.path.join(mock_temp_dir, "project_123456.tar.gz")
+        mock_client.download_project_archive.assert_called_with("123456", output_path)
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch("td_mcp_server.mcp_impl.tempfile.mkdtemp")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_download_project_archive_not_found(
+        self, mock_mkdtemp, mock_client_class
+    ):
+        """Test td_download_project_archive when project is not found."""
+        # Setup mocks
+        mock_temp_dir = "/tmp/td_project_456"
+        mock_mkdtemp.return_value = mock_temp_dir
+
+        mock_client = mock_client_class.return_value
+        mock_client.get_project.return_value = None
+
+        # Call the MCP function
+        result = await td_download_project_archive(project_id="nonexistent")
+
+        # Verify the result
+        assert "error" in result
+        assert "Project with ID 'nonexistent' not found" in result["error"]
+
+        # Verify that download was not attempted
+        assert not mock_client.download_project_archive.called
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch("td_mcp_server.mcp_impl.tempfile.mkdtemp")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_download_project_archive_download_failed(
+        self, mock_mkdtemp, mock_client_class
+    ):
+        """Test td_download_project_archive when download fails."""
+        # Setup mocks
+        mock_temp_dir = "/tmp/td_project_789"
+        mock_mkdtemp.return_value = mock_temp_dir
+
+        mock_client = mock_client_class.return_value
+        mock_client.get_project.return_value = self.mock_projects[0]
+        mock_client.download_project_archive.return_value = False
+
+        # Call the MCP function
+        result = await td_download_project_archive(project_id="123456")
+
+        # Verify the result
+        assert "error" in result
+        assert "Failed to download archive for project '123456'" in result["error"]
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.os.path.exists")
+    @patch("td_mcp_server.mcp_impl.tarfile.open")
+    async def test_td_list_project_files(self, mock_tarfile_open, mock_path_exists):
+        """Test td_list_project_files successfully listing files."""
+        # Setup mocks
+        mock_path_exists.return_value = True
+
+        # Create mock tarfile members
+        mock_file1 = MagicMock()
+        mock_file1.name = "workflow.dig"
+        mock_file1.isdir.return_value = False
+        mock_file1.size = 1024
+
+        mock_file2 = MagicMock()
+        mock_file2.name = "queries/daily_count.sql"
+        mock_file2.isdir.return_value = False
+        mock_file2.size = 2048
+
+        mock_dir = MagicMock()
+        mock_dir.name = "queries"
+        mock_dir.isdir.return_value = True
+        mock_dir.size = 0
+
+        mock_python = MagicMock()
+        mock_python.name = "scripts/process_data.py"
+        mock_python.isdir.return_value = False
+        mock_python.size = 3072
+
+        # Setup mock tarfile
+        mock_tar = MagicMock()
+        mock_tar.getmembers.return_value = [
+            mock_file1,
+            mock_file2,
+            mock_dir,
+            mock_python,
+        ]
+        mock_tarfile_open.return_value.__enter__.return_value = mock_tar
+
+        # Call the MCP function
+        result = await td_list_project_files(archive_path="/tmp/project_123456.tar.gz")
+
+        # Verify the result
+        assert result["success"] is True
+        assert result["archive_path"] == "/tmp/project_123456.tar.gz"
+        assert result["file_count"] == 4
+
+        # Find each file type and verify its attributes
+        directory_found = False
+        workflow_found = False
+        sql_found = False
+        python_found = False
+
+        for file_info in result["files"]:
+            if file_info["type"] == "directory" and file_info["name"] == "queries":
+                directory_found = True
+            elif file_info["name"] == "workflow.dig":
+                workflow_found = True
+                assert file_info["extension"] == ".dig"
+                assert file_info["file_type"] == "Digdag workflow"
+            elif file_info["name"] == "queries/daily_count.sql":
+                sql_found = True
+                assert file_info["extension"] == ".sql"
+                assert file_info["file_type"] == "SQL query"
+            elif file_info["name"] == "scripts/process_data.py":
+                python_found = True
+                assert file_info["extension"] == ".py"
+                assert file_info["file_type"] == "Python script"
+
+        assert directory_found, "Directory not found in results"
+        assert workflow_found, "Workflow file not found in results"
+        assert sql_found, "SQL file not found in results"
+        assert python_found, "Python file not found in results"
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.os.path.exists")
+    async def test_td_list_project_files_not_found(self, mock_path_exists):
+        """Test td_list_project_files when archive file not found."""
+        # Setup mock
+        mock_path_exists.return_value = False
+
+        # Call the MCP function
+        result = await td_list_project_files(archive_path="/tmp/nonexistent.tar.gz")
+
+        # Verify the result
+        assert "error" in result
+        assert (
+            "Archive file not found at path: /tmp/nonexistent.tar.gz" in result["error"]
+        )
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.os.path.exists")
+    @patch("td_mcp_server.mcp_impl.tarfile.open")
+    async def test_td_read_project_file(self, mock_tarfile_open, mock_path_exists):
+        """Test td_read_project_file reading a file successfully."""
+        # Setup mocks
+        mock_path_exists.return_value = True
+
+        # Create mock tarfile member
+        mock_file = MagicMock()
+        mock_file.isdir.return_value = False
+        mock_file.size = 1024
+
+        # Setup mock tar file
+        mock_tar = MagicMock()
+        mock_tar.getmember.return_value = mock_file
+
+        # Setup mock file content
+        mock_extracted_file = MagicMock()
+        mock_extracted_file.read.return_value = (
+            b"SELECT COUNT(*) FROM events WHERE "
+            b"td_time_range(time, '2023-01-01', '2023-01-31', 'JST')"
+        )
+        mock_tar.extractfile.return_value = mock_extracted_file
+
+        mock_tarfile_open.return_value.__enter__.return_value = mock_tar
+
+        # Call the MCP function
+        result = await td_read_project_file(
+            archive_path="/tmp/project_123456.tar.gz",
+            file_path="queries/monthly_count.sql",
+        )
+
+        # Verify the result
+        assert result["success"] is True
+        assert result["file_path"] == "queries/monthly_count.sql"
+        assert result["extension"] == ".sql"
+        assert result["size"] == 1024
+        assert "SELECT COUNT(*) FROM events" in result["content"]
+
+        # Verify tar operations
+        mock_tar.getmember.assert_called_with("queries/monthly_count.sql")
+        mock_tar.extractfile.assert_called_with(mock_file)
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.os.path.exists")
+    async def test_td_read_project_file_archive_not_found(self, mock_path_exists):
+        """Test td_read_project_file when archive not found."""
+        # Setup mock
+        mock_path_exists.return_value = False
+
+        # Call the MCP function
+        result = await td_read_project_file(
+            archive_path="/tmp/nonexistent.tar.gz", file_path="workflow.dig"
+        )
+
+        # Verify the result
+        assert "error" in result
+        assert (
+            "Archive file not found at path: /tmp/nonexistent.tar.gz" in result["error"]
+        )
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.os.path.exists")
+    @patch("td_mcp_server.mcp_impl.tarfile.open")
+    async def test_td_read_project_file_not_found(
+        self, mock_tarfile_open, mock_path_exists
+    ):
+        """Test td_read_project_file when file not in archive."""
+        # Setup mocks
+        mock_path_exists.return_value = True
+
+        # Setup mock tar file
+        mock_tar = MagicMock()
+        mock_tar.getmember.side_effect = KeyError("File not found in archive")
+        mock_tarfile_open.return_value.__enter__.return_value = mock_tar
+
+        # Call the MCP function
+        result = await td_read_project_file(
+            archive_path="/tmp/project_123456.tar.gz", file_path="nonexistent.sql"
+        )
+
+        # Verify the result
+        assert "error" in result
+        assert "File not found in archive: nonexistent.sql" in result["error"]
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.os.path.exists")
+    @patch("td_mcp_server.mcp_impl.tarfile.open")
+    async def test_td_read_project_file_is_directory(
+        self, mock_tarfile_open, mock_path_exists
+    ):
+        """Test td_read_project_file when path is a directory."""
+        # Setup mocks
+        mock_path_exists.return_value = True
+
+        # Create mock tarfile member (directory)
+        mock_dir = MagicMock()
+        mock_dir.isdir.return_value = True
+
+        # Setup mock tar file
+        mock_tar = MagicMock()
+        mock_tar.getmember.return_value = mock_dir
+        mock_tarfile_open.return_value.__enter__.return_value = mock_tar
+
+        # Call the MCP function
+        result = await td_read_project_file(
+            archive_path="/tmp/project_123456.tar.gz", file_path="queries"
+        )
+
+        # Verify the result
+        assert "error" in result
+        assert "Cannot read directory contents: queries" in result["error"]

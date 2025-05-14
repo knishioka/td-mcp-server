@@ -412,3 +412,61 @@ class TestTreasureDataClient:
 
         # Verify the result
         assert project is None
+
+    @responses.activate
+    def test_download_project_archive(self, tmp_path):
+        """Test download_project_archive method."""
+        project_id = "123456"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Create a temporary file to save the archive
+        output_path = tmp_path / f"project_{project_id}.tar.gz"
+
+        # Mock archive data - creating a simple tar.gz file
+        mock_archive_data = b"mock tar.gz content"
+
+        # Mock the API response
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/projects/{project_id}/archive",
+            body=mock_archive_data,
+            status=200,
+            stream=True,
+        )
+
+        # Call the method
+        success = self.client.download_project_archive(project_id, str(output_path))
+
+        # Verify the result
+        assert success is True
+        assert output_path.exists()
+
+        # Check content of the downloaded file
+        with open(output_path, "rb") as f:
+            content = f.read()
+            assert content == mock_archive_data
+
+    @responses.activate
+    def test_download_project_archive_not_found(self, tmp_path):
+        """Test download_project_archive method when project is not found."""
+        project_id = "nonexistent"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Create a temporary file to save the archive
+        output_path = tmp_path / f"project_{project_id}.tar.gz"
+
+        # Mock the API response with 404 status code
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/projects/{project_id}/archive",
+            json={"error": "Project not found"},
+            status=404,
+            stream=True,
+        )
+
+        # Call the method - should return False for 404
+        success = self.client.download_project_archive(project_id, str(output_path))
+
+        # Verify the result
+        assert success is False
+        assert not output_path.exists()

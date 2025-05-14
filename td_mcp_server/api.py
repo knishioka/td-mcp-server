@@ -283,15 +283,69 @@ class TreasureDataClient:
             A Project object representing the workflow project if found, None otherwise
 
         Raises:
-            requests.HTTPError: If the API returns an error response
+            requests.HTTPError: If the API returns an error response (except 404)
         """
+        url = f"{self.workflow_base_url}/projects/{project_id}"
+
         try:
-            response = self._make_request(
-                "GET", f"projects/{project_id}", base_url=self.workflow_base_url
-            )
-            return Project(**response)
-        except requests.HTTPError as e:
-            # Return None if project not found (404)
-            if e.response and e.response.status_code == 404:
+            response = requests.get(url, headers=self.headers)
+
+            # Return None for 404 (project not found)
+            if response.status_code == 404:
                 return None
-            raise
+
+            # Raise for other error status codes
+            response.raise_for_status()
+
+            return Project(**response.json())
+        except requests.RequestException as e:
+            # Re-raise if it's not a 404 error
+            if not isinstance(e, requests.HTTPError) or (
+                hasattr(e, "response") and e.response.status_code != 404
+            ):
+                raise
+            return None
+
+    def download_project_archive(self, project_id: str, output_path: str) -> bool:
+        """
+        Download a project's archive as a tar.gz file.
+
+        This method downloads the complete archive of a workflow project, including all
+        SQL queries, Digdag workflow files, Python scripts, and other resources. The
+        archive is saved as a tar.gz file at the specified output path.
+
+        Args:
+            project_id: The ID of the workflow project to download
+            output_path: The file path where the archive will be saved
+
+        Returns:
+            True if the download was successful, False otherwise
+
+        Raises:
+            requests.HTTPError: If the API returns an error response (except 404)
+            IOError: If there's an issue writing to the output file
+        """
+        url = f"{self.workflow_base_url}/projects/{project_id}/archive"
+
+        try:
+            response = requests.get(url, headers=self.headers, stream=True)
+
+            # Handle 404 specifically before raising other status codes
+            if response.status_code == 404:
+                return False
+
+            # Raise for other error status codes
+            response.raise_for_status()
+
+            with open(output_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+            return True
+        except (OSError, requests.RequestException) as e:
+            # Re-raise if it's not a 404 error
+            if not isinstance(e, requests.HTTPError) or (
+                hasattr(e, "response") and e.response.status_code != 404
+            ):
+                raise
+            return False
