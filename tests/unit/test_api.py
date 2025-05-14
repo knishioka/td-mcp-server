@@ -431,7 +431,6 @@ class TestTreasureDataClient:
             f"https://{workflow_endpoint}/api/projects/{project_id}/archive",
             body=mock_archive_data,
             status=200,
-            stream=True,
         )
 
         # Call the method
@@ -461,7 +460,6 @@ class TestTreasureDataClient:
             f"https://{workflow_endpoint}/api/projects/{project_id}/archive",
             json={"error": "Project not found"},
             status=404,
-            stream=True,
         )
 
         # Call the method - should return False for 404
