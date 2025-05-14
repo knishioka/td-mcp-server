@@ -38,7 +38,7 @@ jobs:
 
     - name: Run type checking with mypy
       run: |
-        uv run mypy td_mcp_server
+        uv run mypy --install-types --non-interactive td_mcp_server
 
     - name: Run pytest with coverage
       run: |
