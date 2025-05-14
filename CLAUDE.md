@@ -60,8 +60,6 @@ This project requires Python 3.11+ and the following packages:
 - requests
 - pydantic
 - mcp
-- click
-- typer
 
 If you want to run tests, you'll also need:
 - pytest
@@ -85,36 +83,6 @@ mcp install td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT=
 mcp install td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.co.jp"
 ```
 
-### CLI Commands
-
-```bash
-# List databases (first 30 by default)
-td-list-databases
-
-# List databases with verbose output
-td-list-databases --verbose
-
-# List databases with pagination
-td-list-databases --limit 10 --offset 20
-
-# List all databases
-td-list-databases --all
-
-# Get database information
-td-get-database my_database_name
-
-# List tables in a database (first 30 by default)
-td-list-tables my_database_name
-
-# List tables with verbose output
-td-list-tables my_database_name --verbose
-
-# List tables with pagination
-td-list-tables my_database_name --limit 10 --offset 20
-
-# List all tables in a database
-td-list-tables my_database_name --all
-```
 
 ### Testing
 
@@ -190,13 +158,8 @@ The codebase is structured around the following key components:
 - Core API methods: `get_databases`, `get_database`, `get_tables`
 - All methods support pagination with `limit`, `offset`, and `all_results` parameters
 
-### 2. CLI Interface (`td_mcp_server/cli_api.py`)
 
-- Command-line functions: `list_databases`, `get_database`, `list_tables`
-- Entry points: `main_list_databases`, `main_get_database`, `main_list_tables`
-- Supports various output formats (table, JSON) and verbosity levels
-
-### 3. MCP Implementation
+### 2. MCP Implementation
 
 #### Core MCP Tools (`td_mcp_server/mcp_impl.py`)
 - Implements the FastMCP server: `mcp = FastMCP("treasure-data")`
@@ -212,10 +175,9 @@ The codebase is structured around the following key components:
 - Used for Claude Desktop integration with `mcp install`
 - Provides all Treasure Data API functionality through the MCP protocol
 
-### 4. Tests
+### 3. Tests
 
 - Unit tests for API client: `tests/unit/test_api.py`
-- Unit tests for CLI commands: `tests/unit/test_cli_api.py`
 - Unit tests for MCP tools: `tests/unit/test_mcp_impl.py`
 
 ## Data Flow

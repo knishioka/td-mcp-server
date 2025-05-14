@@ -204,8 +204,6 @@ This project requires Python 3.11+ and the following packages:
 - requests
 - pydantic
 - mcp
-- click
-- typer
 
 Install the dependencies with pip:
 ```bash
