@@ -10,6 +10,7 @@ import pytest
 from td_mcp_server.api import Database, Metadata, Project, Table
 from td_mcp_server.mcp_impl import (
     td_get_database,
+    td_get_project,
     td_list_databases,
     td_list_projects,
     td_list_tables,
@@ -460,3 +461,42 @@ class TestMCPImplementation:
         assert "error" in result
         assert "TD_API_KEY environment variable is not set" in result["error"]
         assert not mock_client_class.called
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_get_project(self, mock_client_class):
+        """Test td_get_project function."""
+        # Setup the mock
+        mock_client = mock_client_class.return_value
+        mock_client.get_project.return_value = self.mock_projects[0]
+
+        # Call the MCP function
+        result = await td_get_project(project_id="123456")
+
+        # Verify the result
+        assert result["id"] == "123456"
+        assert result["name"] == "demo_content_affinity"
+        assert mock_client.get_project.called
+        mock_client.get_project.assert_called_with("123456")
+
+    @pytest.mark.asyncio
+    @patch("td_mcp_server.mcp_impl.TreasureDataClient")
+    @patch.dict(
+        os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
+    )
+    async def test_td_get_project_not_found(self, mock_client_class):
+        """Test td_get_project when project is not found."""
+        # Setup the mock
+        mock_client = mock_client_class.return_value
+        mock_client.get_project.return_value = None
+
+        # Call the MCP function
+        result = await td_get_project(project_id="nonexistent")
+
+        # Verify the result
+        assert "error" in result
+        assert "Project with ID 'nonexistent' not found" in result["error"]
+        assert mock_client.get_project.called

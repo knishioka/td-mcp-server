@@ -81,7 +81,7 @@ class TreasureDataClient:
                      If not provided, will look for TD_API_KEY environment variable.
             endpoint: The API endpoint to use. Defaults to the US region.
             api_version: The API version to use. Defaults to v3.
-            workflow_endpoint: The workflow API endpoint to use. 
+            workflow_endpoint: The workflow API endpoint to use.
                              Defaults based on the provided endpoint.
         """
         self.api_key = api_key or os.environ.get("TD_API_KEY")
@@ -252,3 +252,27 @@ class TreasureDataClient:
                 else len(all_projects)
             )
             return all_projects[offset:end_index]
+
+    def get_project(self, project_id: str) -> Project | None:
+        """
+        Retrieve detailed information about a specific workflow project.
+
+        Args:
+            project_id: The ID of the project to retrieve
+
+        Returns:
+            A Project object if found, None otherwise
+
+        Raises:
+            requests.HTTPError: If the API returns an error response
+        """
+        try:
+            response = self._make_request(
+                "GET", f"projects/{project_id}", base_url=self.workflow_base_url
+            )
+            return Project(**response)
+        except requests.HTTPError as e:
+            # Return None if project not found (404)
+            if e.response and e.response.status_code == 404:
+                return None
+            raise

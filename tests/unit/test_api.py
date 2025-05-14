@@ -329,13 +329,13 @@ class TestTreasureDataClient:
             api_key=self.api_key, endpoint="api.treasuredata.co.jp"
         )
         assert client.workflow_endpoint == "api-workflow.treasuredata.co.jp"
-        
+
         # Test with non-standard region
         client = TreasureDataClient(
             api_key=self.api_key, endpoint="api.treasuredata.eu"
         )
         assert client.workflow_endpoint == "api-workflow.treasuredata.eu"
-        
+
         # Test with different domain structure (non-standard input)
         client = TreasureDataClient(
             api_key=self.api_key, endpoint="treasuredata-api.com"
@@ -351,3 +351,64 @@ class TestTreasureDataClient:
             workflow_endpoint=custom_endpoint,
         )
         assert client.workflow_endpoint == custom_endpoint
+
+    @responses.activate
+    def test_get_project(self):
+        """Test get_project method."""
+        project_id = "123456"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock the API response
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/projects/{project_id}",
+            json={
+                "id": project_id,
+                "name": "demo_content_affinity",
+                "revision": "abcdef1234567890abcdef1234567890",
+                "createdAt": "2022-01-01T00:00:00Z",
+                "updatedAt": "2022-01-02T00:00:00Z",
+                "deletedAt": None,
+                "archiveType": "s3",
+                "archiveMd5": "abcdefghijklmnopqrstuvwx==",
+                "metadata": [
+                    {"key": "category", "value": "machine-learning"},
+                    {"key": "version", "value": "1.0.0"},
+                ],
+            },
+            status=200,
+        )
+
+        # Call the method
+        project = self.client.get_project(project_id)
+
+        # Verify the results
+        assert project is not None
+        assert project.id == project_id
+        assert project.name == "demo_content_affinity"
+        assert project.revision == "abcdef1234567890abcdef1234567890"
+        assert project.created_at == "2022-01-01T00:00:00Z"
+        assert project.updated_at == "2022-01-02T00:00:00Z"
+        assert len(project.metadata) == 2
+        assert project.metadata[0].key == "category"
+        assert project.metadata[0].value == "machine-learning"
+
+    @responses.activate
+    def test_get_project_not_found(self):
+        """Test get_project method when project is not found."""
+        project_id = "nonexistent"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock the API response with 404 status code
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/projects/{project_id}",
+            json={"error": "Project not found"},
+            status=404,
+        )
+
+        # Call the method - should return None for 404
+        project = self.client.get_project(project_id)
+
+        # Verify the result
+        assert project is None

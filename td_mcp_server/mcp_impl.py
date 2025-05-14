@@ -170,6 +170,33 @@ async def td_list_projects(
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
+@mcp.tool()
+async def td_get_project(project_id: str) -> dict[str, Any]:
+    """Get detailed information about a specific workflow project.
+
+    Args:
+        project_id: The ID of the project to retrieve information for
+    """
+    api_key = os.environ.get("TD_API_KEY")
+    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
+    workflow_endpoint = os.environ.get("TD_WORKFLOW_ENDPOINT")
+
+    if not api_key:
+        return {"error": "TD_API_KEY environment variable is not set"}
+
+    try:
+        client = TreasureDataClient(
+            api_key=api_key, endpoint=endpoint, workflow_endpoint=workflow_endpoint
+        )
+        project = client.get_project(project_id)
+        if project:
+            return project.model_dump()
+        else:
+            return {"error": f"Project with ID '{project_id}' not found"}
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+
 if __name__ == "__main__":
     # Initialize and run the server
     mcp.run(transport="stdio")
