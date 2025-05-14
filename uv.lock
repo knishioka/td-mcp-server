@@ -708,11 +708,9 @@ name = "td-mcp-server"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "click" },
     { name = "mcp", extra = ["cli"] },
     { name = "pydantic" },
     { name = "requests" },
-    { name = "typer" },
 ]
 
 [package.optional-dependencies]
@@ -728,7 +726,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "click", specifier = ">=8.0.0,<8.2.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.8.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.3.0" },
@@ -739,7 +736,6 @@ requires-dist = [
     { name = "requests", specifier = ">=2.28.0" },
     { name = "responses", marker = "extra == 'dev'", specifier = ">=0.23.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.6" },
-    { name = "typer", specifier = ">=0.9.0" },
 ]
 provides-extras = ["dev"]
 
