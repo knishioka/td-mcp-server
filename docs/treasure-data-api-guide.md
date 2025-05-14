@@ -354,6 +354,30 @@ curl -s -H "Authorization: TD1 YOUR_API_KEY" "https://api-workflow.treasuredata.
 }
 ```
 
+### Download Project Archive
+
+You can download a project's complete archive (including all SQL, Digdag files, and other resources) as a tar.gz file. This is useful for backing up projects, examining workflow definitions, or migrating projects between environments.
+
+**Request:**
+```bash
+curl -X GET "https://api-workflow.treasuredata.com/api/projects/123456/archive" \
+  -H "Authorization: TD1 YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -o project_123456.tar.gz
+```
+
+This command downloads the complete project archive as a tar.gz file. The archive contains:
+- Workflow definition files (*.dig)
+- SQL query files
+- Python scripts
+- Configuration files
+- Any other resources needed for the workflows
+
+**Note:** The downloaded archive can be extracted using standard tools:
+```bash
+mkdir project_dir && tar -xzf project_123456.tar.gz -C project_dir
+```
+
 ## Job History and Data Retention
 
 Treasure Data preserves job history and results for 90 days through standard console, CLI, and API methods. For data older than 90 days, Treasure Data offers a premium audit log service.
