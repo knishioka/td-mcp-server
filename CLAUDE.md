@@ -4,14 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Important Development Guidelines
 
-### Trailing Whitespace
+### Code Quality Standards
 
-This project uses pre-commit hooks to enforce code quality standards, including the removal of trailing whitespace. When working with Claude Code, be aware that:
+This project uses pre-commit hooks to enforce several code quality standards:
+
+#### Trailing Whitespace
 
 - All trailing whitespace will be automatically removed during commits
 - If developing with Claude Code, ensure your text does not contain trailing spaces, especially in docstrings and comments
 - Claude Code may occasionally add trailing whitespace that will trigger pre-commit hook warnings
 - To fix trailing whitespace issues, run `uv run ruff format td_mcp_server tests` before committing
+
+#### Newline at End of File
+
+- All files must end with a newline character
+- The pre-commit hook 'end-of-file-fixer' enforces this requirement
+- When creating or editing files with Claude Code, always ensure there is a newline at the end of the file
+- This is a standard convention in Unix/Linux systems and helps prevent issues with certain tools
+
+### Documentation Guidelines
+
+#### MCP Tools Documentation
+
+- When adding new MCP tools to the server, always update the README.md file with complete documentation
+- Each tool should be documented with:
+  - Function signature with parameters
+  - Description of what the tool does
+  - Parameter descriptions and default values
+  - Usage examples
+- The README.md should focus primarily on the available MCP tools to make it easy for users to understand what functionality is available
+- Organization by categories (e.g., Database Management, Workflow Project Management) improves readability
 
 ## Treasure Data MCP Server Overview
 
@@ -178,9 +200,12 @@ The codebase is structured around the following key components:
 
 #### Core MCP Tools (`td_mcp_server/mcp_impl.py`)
 - Implements the FastMCP server: `mcp = FastMCP("treasure-data")`
-- MCP tools: `td_list_databases`, `td_get_database`, `td_list_tables`
+- MCP tools:
+  - Database Management: `td_list_databases`, `td_get_database`, `td_list_tables`
+  - Workflow Project Management: `td_list_projects`, `td_get_project`, `td_download_project_archive`, `td_list_project_files`, `td_read_project_file`
 - All tools are async functions with proper type annotations
 - Tools read API credentials from environment variables: `TD_API_KEY`, `TD_ENDPOINT`
+- When adding new tools, always update the README.md with complete documentation
 
 #### Standalone Server (`td_mcp_server/server.py`)
 - Standalone server script that can be run directly with `mcp run`
