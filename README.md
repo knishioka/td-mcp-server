@@ -21,16 +21,16 @@ This MCP server provides the following tools for interacting with Treasure Data:
    - **Examples**:
      ```
      # Get only database names (default, first 30 databases)
-     /mcp td_list_databases
+     td_list_databases
 
      # Get full database details
-     /mcp td_list_databases verbose=True
+     td_list_databases verbose=True
 
      # Pagination options
-     /mcp td_list_databases limit=10 offset=20
+     td_list_databases limit=10 offset=20
 
      # Get all databases regardless of the number
-     /mcp td_list_databases all_results=True
+     td_list_databases all_results=True
      ```
 
 2. **td_get_database**
@@ -43,7 +43,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
    - **Example**:
      ```
      # Get information about a specific database
-     /mcp td_get_database database_name=my_database_name
+     td_get_database database_name=my_database_name
      ```
 
 3. **td_list_tables**
@@ -60,16 +60,16 @@ This MCP server provides the following tools for interacting with Treasure Data:
    - **Examples**:
      ```
      # Get only table names in a database (default, first 30 tables)
-     /mcp td_list_tables database_name=my_database_name
+     td_list_tables database_name=my_database_name
 
      # Get detailed information about tables in a database
-     /mcp td_list_tables database_name=my_database_name verbose=True
+     td_list_tables database_name=my_database_name verbose=True
 
      # Pagination options
-     /mcp td_list_tables database_name=my_database_name limit=10 offset=20
+     td_list_tables database_name=my_database_name limit=10 offset=20
 
      # Get all tables in a database
-     /mcp td_list_tables database_name=my_database_name all_results=True
+     td_list_tables database_name=my_database_name all_results=True
      ```
 
 ### Workflow Project Management
@@ -87,16 +87,16 @@ This MCP server provides the following tools for interacting with Treasure Data:
    - **Examples**:
      ```
      # Get basic project info (default, first 30 projects)
-     /mcp td_list_projects
+     td_list_projects
 
      # Get detailed project information
-     /mcp td_list_projects verbose=True
+     td_list_projects verbose=True
 
      # Pagination options
-     /mcp td_list_projects limit=10 offset=20
+     td_list_projects limit=10 offset=20
 
      # Get all projects regardless of the number
-     /mcp td_list_projects all_results=True
+     td_list_projects all_results=True
      ```
 
 5. **td_get_project**
@@ -109,7 +109,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
    - **Example**:
      ```
      # Get information about a specific project
-     /mcp td_get_project project_id=123456
+     td_get_project project_id=123456
      ```
 
 6. **td_download_project_archive**
@@ -122,7 +122,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
    - **Example**:
      ```
      # Download a project's archive
-     /mcp td_download_project_archive project_id=123456
+     td_download_project_archive project_id=123456
      ```
 
 7. **td_list_project_files**
@@ -135,7 +135,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
    - **Example**:
      ```
      # List files in a downloaded project archive
-     /mcp td_list_project_files archive_path=/tmp/td_project_123/project_123456.tar.gz
+     td_list_project_files archive_path=/tmp/td_project_123/project_123456.tar.gz
      ```
 
 8. **td_read_project_file**
@@ -149,7 +149,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
    - **Example**:
      ```
      # Read a specific file from a project archive
-     /mcp td_read_project_file archive_path=/tmp/td_project_123/project_123456.tar.gz file_path=workflow.dig
+     td_read_project_file archive_path=/tmp/td_project_123/project_123456.tar.gz file_path=workflow.dig
      ```
 
 ## Setup Instructions

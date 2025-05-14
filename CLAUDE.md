@@ -31,7 +31,7 @@ This project uses pre-commit hooks to enforce several code quality standards:
   - Function signature with parameters
   - Description of what the tool does
   - Parameter descriptions and default values
-  - Usage examples
+  - Usage examples without any command prefix (like `/mcp`)
 - The README.md should focus primarily on the available MCP tools to make it easy for users to understand what functionality is available
 - Organization by categories (e.g., Database Management, Workflow Project Management) improves readability
 
