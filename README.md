@@ -159,9 +159,6 @@ The server requires a Treasure Data API key, which should be provided via the `T
 # Using environment variable
 export TD_API_KEY="your-api-key"
 mcp run td_mcp_server/server.py
-
-# For Claude Desktop integration, you can include the API key during installation
-mcp install td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.com"
 ```
 
 ### FastMCP Implementation
@@ -215,22 +212,37 @@ To configure this MCP server for use with Claude Desktop:
    git clone https://github.com/yourusername/td-mcp-server.git
    ```
 
-2. Method 1: Using the MCP CLI (Recommended)
+2. Using UV with the --directory option
    ```bash
-   # Install the server with Claude Desktop using the MCP CLI
-   mcp install /absolute/path/to/td-mcp-server/td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.com"
-
-   # For Japan region
-   mcp install /absolute/path/to/td-mcp-server/td_mcp_server/server.py -v TD_API_KEY="your-api-key" -v TD_ENDPOINT="api.treasuredata.co.jp"
+   uv --directory /path/to/td-mcp-server run td_mcp_server/server.py
    ```
 
-3. Method 2: Using the Claude Desktop UI
-   - Go to Settings > MCP Tools > Add New Tool
-   - Name: Treasure Data API
-   - Command: `mcp run /absolute/path/to/td-mcp-server/td_mcp_server/server.py`
-   - Environment variables: Add your `TD_API_KEY` and optionally `TD_ENDPOINT`
+   This approach is useful when you want to run the server from a specific directory, ensuring all imports and file paths are resolved correctly.
 
-4. You can now use the Treasure Data API tools in your Claude Desktop conversations
+   You can also add the configuration directly to your Claude Desktop configuration file (`claude_desktop_config.json`):
+
+   ```json
+   {
+     "mcpServers": {
+       "td": {
+         "command": "uv",
+         "args": [
+           "--directory",
+           "/Users/ken/Developer/td/td-mcp-server",
+           "run",
+           "td_mcp_server/server.py"
+         ],
+         "env": {
+           "TD_API_KEY": "YOUR API KEY"
+         }
+       }
+     }
+   }
+   ```
+
+   This configuration tells Claude Desktop to use `uv` to run the server from the specified directory.
+
+3. You can now use the Treasure Data API tools in your Claude Desktop conversations
 
 ### Using MCP Tools in Claude
 
@@ -285,8 +297,6 @@ For development and testing:
 - pytest-mock >= 3.10.0
 - pytest-cov >= 4.0.0
 - responses >= 0.23.0
-- black >= 23.0.0
-- isort >= 5.12.0
 - mypy >= 1.0.0
 - ruff >= 0.0.270
 - pre-commit >= 3.3.0
