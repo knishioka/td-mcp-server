@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Important Development Guidelines
+
+### Trailing Whitespace
+
+This project uses pre-commit hooks to enforce code quality standards, including the removal of trailing whitespace. When working with Claude Code, be aware that:
+
+- All trailing whitespace will be automatically removed during commits
+- If developing with Claude Code, ensure your text does not contain trailing spaces, especially in docstrings and comments
+- Claude Code may occasionally add trailing whitespace that will trigger pre-commit hook warnings
+- To fix trailing whitespace issues, run `uv run ruff format td_mcp_server tests` before committing
+
 ## Treasure Data MCP Server Overview
 
 This repository contains a Model Context Protocol (MCP) server that provides Treasure Data API integration for Claude Code and Claude Desktop, allowing for database management and listing functionality.
