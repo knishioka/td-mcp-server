@@ -4,6 +4,15 @@ A Model Context Protocol (MCP) server that provides Treasure Data API integratio
 
 > **DISCLAIMER**: This is a personal development project and is not affiliated with, endorsed by, or related to Treasure Data Inc. in any way. This software is provided "as is" without warranty of any kind, and should be used at your own risk. The author is not responsible for any consequences resulting from the use of this software.
 
+## Reference Documentation
+
+For comprehensive Treasure Data documentation and tools:
+
+- **Official API Documentation**: https://api-docs.treasuredata.com/en/overview/gettingstarted/
+- **CLI Tool (td command)**: https://github.com/treasure-data/td
+- **Console Interface**: https://console.treasuredata.com/
+- **Detailed API Guide**: [docs/treasure-data-api-guide.md](docs/treasure-data-api-guide.md)
+
 ## Available MCP Tools
 
 This MCP server provides the following tools for interacting with Treasure Data:

@@ -2,6 +2,37 @@
 
 This document provides an overview of Treasure Data API endpoints, authentication methods, and example responses from various API calls using curl.
 
+## Additional Reference Documentation
+
+For comprehensive API documentation and tools, refer to these official resources:
+
+### Official Documentation and Tools
+
+- **Official API Documentation**: https://api-docs.treasuredata.com/en/overview/gettingstarted/
+  - REST API overview with multiple API types (Audience API, TD API, Postback API, Real-time Personalization API)
+  - Resource-based interactions over HTTP
+  - Complete API reference with all endpoints
+
+- **CLI Tool (td command)**: https://github.com/treasure-data/td
+  - Command-line utility wrapping the Ruby Client Library
+  - Installation: `gem install td`
+  - Key commands: `td account`, `td database:create`, `td table:create`
+  - Supports bulk data import and job management
+
+- **Console Interface**: https://console.treasuredata.com/
+  - Interactive web console for data management
+  - Visual interface for database and query operations
+
+### Key Resources
+
+These resources provide detailed information about:
+- Complete API reference with all endpoints
+- Authentication methods and best practices
+- SDKs and client libraries (Ruby, Java, Python, etc.)
+- Command-line interface for TD operations
+- Interactive web console for data management
+- Bulk data import capabilities
+
 ## API Endpoints
 
 ### Core API Endpoints

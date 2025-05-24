@@ -4,9 +4,9 @@ This module provides a FastMCP server for Treasure Data API.
 """
 
 import os
+import re
 import tarfile
 import tempfile
-import traceback
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +16,85 @@ from .api import TreasureDataClient
 
 # Initialize FastMCP server
 mcp = FastMCP("treasure-data")
+
+
+def _validate_project_id(project_id: str) -> bool:
+    """Validate project ID to prevent path traversal attacks."""
+    if not project_id:
+        return False
+    # Only allow alphanumeric characters, hyphens, and underscores
+    if not re.match(r"^[a-zA-Z0-9_-]+$", project_id):
+        return False
+    # Prevent path traversal patterns
+    if ".." in project_id or "/" in project_id or "\\" in project_id:
+        return False
+    return True
+
+
+def _validate_file_path(file_path: str) -> bool:
+    """Validate file path to prevent path traversal attacks."""
+    if not file_path:
+        return False
+    # Normalize path and check for traversal attempts
+    normalized = os.path.normpath(file_path)
+    # Prevent absolute paths and traversal
+    if normalized.startswith("/") or normalized.startswith("\\") or ".." in normalized:
+        return False
+    return True
+
+
+def _validate_archive_path(archive_path: str) -> bool:
+    """Validate archive path to ensure it's in allowed temporary directories."""
+    if not archive_path:
+        return False
+
+    # Normalize the path to prevent tricks
+    normalized_path = os.path.normpath(archive_path)
+
+    # Allow paths in temp directories or test paths
+    temp_prefix = tempfile.gettempdir()
+    allowed_prefixes = [temp_prefix, "/tmp"]
+
+    if not any(normalized_path.startswith(prefix) for prefix in allowed_prefixes):
+        return False
+
+    # Prevent path traversal
+    if ".." in normalized_path:
+        return False
+
+    if not archive_path.endswith(".tar.gz"):
+        return False
+    return True
+
+
+def _safe_extract_member(member, extract_path: str) -> bool:
+    """Safely extract a tar member, preventing path traversal and other attacks."""
+    # Normalize the member name
+    member_path = os.path.normpath(member.name)
+
+    # Prevent absolute paths
+    if member_path.startswith("/") or member_path.startswith("\\"):
+        return False
+
+    # Prevent path traversal
+    if ".." in member_path:
+        return False
+
+    # Check final extracted path
+    final_path = os.path.join(extract_path, member_path)
+    if not final_path.startswith(extract_path):
+        return False
+
+    # Check file size (prevent zip bombs)
+    if member.size > 100 * 1024 * 1024:  # 100MB limit
+        return False
+
+    return True
+
+
+def _format_error_response(error_msg: str) -> dict[str, str]:
+    """Format error response without exposing sensitive information."""
+    return {"error": error_msg}
 
 
 @mcp.tool()
@@ -49,7 +128,7 @@ async def td_list_databases(
             # Return only database names
             return {"databases": [db.name for db in databases]}
     except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _format_error_response(f"Failed to retrieve databases: {str(e)}")
 
 
 @mcp.tool()
@@ -59,11 +138,15 @@ async def td_get_database(database_name: str) -> dict[str, Any]:
     Args:
         database_name: The name of the database to retrieve information for
     """
+    # Input validation
+    if not database_name or not database_name.strip():
+        return _format_error_response("Database name cannot be empty")
+
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
 
     if not api_key:
-        return {"error": "TD_API_KEY environment variable is not set"}
+        return _format_error_response("TD_API_KEY environment variable is not set")
 
     try:
         client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
@@ -71,9 +154,11 @@ async def td_get_database(database_name: str) -> dict[str, Any]:
         if database:
             return database.model_dump()
         else:
-            return {"error": f"Database '{database_name}' not found"}
+            return _format_error_response(f"Database '{database_name}' not found")
     except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _format_error_response(
+            f"Failed to retrieve database '{database_name}': {str(e)}"
+        )
 
 
 @mcp.tool()
@@ -93,11 +178,15 @@ async def td_list_tables(
         offset: Index to start retrieving from (defaults to 0)
         all_results: If True, retrieves all tables ignoring limit and offset
     """
+    # Input validation
+    if not database_name or not database_name.strip():
+        return _format_error_response("Database name cannot be empty")
+
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
 
     if not api_key:
-        return {"error": "TD_API_KEY environment variable is not set"}
+        return _format_error_response("TD_API_KEY environment variable is not set")
 
     try:
         client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
@@ -105,7 +194,7 @@ async def td_list_tables(
         # First, verify that the database exists
         database = client.get_database(database_name)
         if not database:
-            return {"error": f"Database '{database_name}' not found"}
+            return _format_error_response(f"Database '{database_name}' not found")
 
         # Get tables for the database
         tables = client.get_tables(
@@ -125,7 +214,9 @@ async def td_list_tables(
                 "tables": [table.name for table in tables],
             }
     except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _format_error_response(
+            f"Failed to retrieve tables from database '{database_name}': {str(e)}"
+        )
 
 
 @mcp.tool()
@@ -182,7 +273,7 @@ async def td_list_projects(
                 ]
             }
     except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _format_error_response(f"Failed to retrieve projects: {str(e)}")
 
 
 @mcp.tool()
@@ -200,12 +291,16 @@ async def td_get_project(project_id: str) -> dict[str, Any]:
     Args:
         project_id: The ID of the workflow project to retrieve information for
     """
+    # Input validation - prevent path traversal
+    if not _validate_project_id(project_id):
+        return _format_error_response("Invalid project ID format")
+
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
     workflow_endpoint = os.environ.get("TD_WORKFLOW_ENDPOINT")
 
     if not api_key:
-        return {"error": "TD_API_KEY environment variable is not set"}
+        return _format_error_response("TD_API_KEY environment variable is not set")
 
     try:
         client = TreasureDataClient(
@@ -215,9 +310,11 @@ async def td_get_project(project_id: str) -> dict[str, Any]:
         if project:
             return project.model_dump()
         else:
-            return {"error": f"Project with ID '{project_id}' not found"}
+            return _format_error_response(f"Project with ID '{project_id}' not found")
     except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _format_error_response(
+            f"Failed to retrieve project '{project_id}': {str(e)}"
+        )
 
 
 @mcp.tool()
@@ -231,17 +328,24 @@ async def td_download_project_archive(project_id: str) -> dict[str, Any]:
     Args:
         project_id: The ID of the workflow project to download
     """
+    # Input validation - prevent path traversal
+    if not _validate_project_id(project_id):
+        return _format_error_response("Invalid project ID format")
+
     api_key = os.environ.get("TD_API_KEY")
     endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
     workflow_endpoint = os.environ.get("TD_WORKFLOW_ENDPOINT")
 
     if not api_key:
-        return {"error": "TD_API_KEY environment variable is not set"}
+        return _format_error_response("TD_API_KEY environment variable is not set")
 
     try:
-        # Create temporary directory for storing the archive
+        # Create temporary directory with secure permissions
         temp_dir = tempfile.mkdtemp(prefix="td_project_")
-        output_path = os.path.join(temp_dir, f"project_{project_id}.tar.gz")
+        os.chmod(temp_dir, 0o700)
+        # Use sanitized project_id for filename
+        safe_filename = re.sub(r"[^a-zA-Z0-9_-]", "_", project_id)
+        output_path = os.path.join(temp_dir, f"project_{safe_filename}.tar.gz")
 
         client = TreasureDataClient(
             api_key=api_key, endpoint=endpoint, workflow_endpoint=workflow_endpoint
@@ -267,7 +371,7 @@ async def td_download_project_archive(project_id: str) -> dict[str, Any]:
             "message": f"Successfully downloaded archive for project '{project.name}'",
         }
     except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _format_error_response(f"Failed to download project archive: {str(e)}")
 
 
 @mcp.tool()
@@ -280,14 +384,22 @@ async def td_list_project_files(archive_path: str) -> dict[str, Any]:
     Args:
         archive_path: The path to the downloaded project archive (.tar.gz file)
     """
+    # Input validation - prevent path traversal
+    if not _validate_archive_path(archive_path):
+        return _format_error_response("Invalid archive path")
+
     try:
         if not os.path.exists(archive_path):
-            return {"error": f"Archive file not found at path: {archive_path}"}
+            return _format_error_response("Archive file not found")
 
         file_list = []
 
         with tarfile.open(archive_path, "r:gz") as tar:
             for member in tar.getmembers():
+                # Security check for each member
+                if not _safe_extract_member(member, "/tmp/validation"):
+                    continue  # Skip unsafe members
+
                 file_info = {
                     "name": member.name,
                     "type": "directory" if member.isdir() else "file",
@@ -323,7 +435,7 @@ async def td_list_project_files(archive_path: str) -> dict[str, Any]:
             "files": file_list,
         }
     except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _format_error_response(f"Failed to list project files: {str(e)}")
 
 
 @mcp.tool()
@@ -338,25 +450,54 @@ async def td_read_project_file(archive_path: str, file_path: str) -> dict[str, A
         archive_path: The path to the downloaded project archive (.tar.gz file)
         file_path: The path of the file within the archive to read
     """
+    # Input validation - prevent path traversal
+    if not _validate_archive_path(archive_path):
+        return _format_error_response("Invalid archive path")
+
+    if not _validate_file_path(file_path):
+        return _format_error_response("Invalid file path")
+
     try:
         if not os.path.exists(archive_path):
-            return {"error": f"Archive file not found at path: {archive_path}"}
+            return _format_error_response("Archive file not found")
 
         try:
             with tarfile.open(archive_path, "r:gz") as tar:
                 try:
                     file_info = tar.getmember(file_path)
 
+                    # Security check for the member
+                    if not _safe_extract_member(file_info, "/tmp/validation"):
+                        return _format_error_response(
+                            "File access denied for security reasons"
+                        )
+
                     # Don't try to read directories
                     if file_info.isdir():
-                        return {"error": f"Cannot read directory contents: {file_path}"}
+                        return _format_error_response("Cannot read directory contents")
 
                     # Extract and read the file
                     f = tar.extractfile(file_info)
                     if f is None:
-                        return {"error": f"Failed to extract file: {file_path}"}
+                        return _format_error_response("Failed to extract file")
 
-                    content = f.read().decode("utf-8")
+                    # Read with size limit
+                    max_size = 10 * 1024 * 1024  # 10MB limit
+                    if file_info.size > max_size:
+                        return _format_error_response("File too large to read")
+
+                    content_bytes = f.read()
+
+                    # Try to decode as text
+                    try:
+                        content = content_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        try:
+                            content = content_bytes.decode("latin-1")
+                        except UnicodeDecodeError:
+                            return _format_error_response(
+                                "File is not readable as text"
+                            )
 
                     extension = Path(file_path).suffix.lower()
 
@@ -368,11 +509,11 @@ async def td_read_project_file(archive_path: str, file_path: str) -> dict[str, A
                         "extension": extension,
                     }
                 except KeyError:
-                    return {"error": f"File not found in archive: {file_path}"}
+                    return _format_error_response("File not found in archive")
         except tarfile.ReadError:
-            return {"error": f"Invalid or corrupted archive file: {archive_path}"}
+            return _format_error_response("Invalid or corrupted archive file")
     except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _format_error_response(f"Failed to read file: {str(e)}")
 
 
 if __name__ == "__main__":

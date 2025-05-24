@@ -41,11 +41,15 @@ This repository contains a Model Context Protocol (MCP) server that provides Tre
 
 ## API Reference
 
-For Treasure Data API specifications, endpoint details, example responses, and other API-related information, refer to the detailed documentation in:
+For Treasure Data API specifications, endpoint details, example responses, and other API-related information, refer to these resources:
 
-**docs/treasure-data-api-guide.md**
+### Official Documentation
+- **Official API Documentation**: https://api-docs.treasuredata.com/en/overview/gettingstarted/
+- **CLI Tool (td command)**: https://github.com/treasure-data/td
+- **Console Interface**: https://console.treasuredata.com/
 
-This guide includes:
+### Project-Specific Documentation
+**docs/treasure-data-api-guide.md** - Local API guide including:
 - API endpoint URLs for different regions
 - Authentication methods
 - Example API requests and responses
