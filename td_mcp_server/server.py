@@ -10,8 +10,16 @@ For Claude Desktop integration, use:
 
 import os
 import sys
+from pathlib import Path
 
-from .mcp_impl import mcp
+# Add the parent directory to the path to allow imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+try:
+    from td_mcp_server.mcp_impl import mcp
+except ImportError:
+    # Fallback for when running as a standalone script
+    from mcp_impl import mcp  # type: ignore
 
 if __name__ == "__main__":
     # Check for API key

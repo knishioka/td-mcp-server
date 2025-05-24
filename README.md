@@ -180,15 +180,26 @@ This MCP server requires a Treasure Data API key for authentication, which shoul
 1. Clone the repository
    ```bash
    git clone https://github.com/knishioka/td-mcp-server.git
+   cd td-mcp-server
    ```
 
-2. Add the MCP server using the Claude Code CLI
+2. Install dependencies
    ```bash
-   # Navigate to your project directory
-   cd your-project-directory
+   # Using pip
+   pip install -r requirements.txt
 
-   # Add the MCP server (use absolute path to server.py)
-   claude mcp add td -e TD_API_KEY=${TD_API_KEY} -e TD_ENDPOINT=api.treasuredata.com -- mcp run /absolute/path/to/td-mcp-server/td_mcp_server/server.py
+   # Or using uv (recommended)
+   uv pip install -e .
+   ```
+
+3. Set up environment variables and run
+   ```bash
+   # Set your API key
+   export TD_API_KEY="your-api-key"
+   export TD_ENDPOINT="api.treasuredata.com"  # Optional, defaults to US region
+
+   # Run the MCP server
+   mcp run td_mcp_server/server.py
    ```
 
 ### Setting up with Claude Desktop
@@ -217,18 +228,18 @@ Configure this MCP server for use with Claude Desktop by editing your configurat
 
 ## Installation and Requirements
 
-This project requires Python 3.11+ and the following packages:
-- requests
-- pydantic
-- mcp
+This project requires Python 3.11+ and the following dependencies:
+- `requests>=2.28.0` - HTTP client for API requests
+- `pydantic>=2.0.0` - Data validation and serialization
+- `mcp[cli]>=1.8.1` - Model Context Protocol framework
 
-Install the dependencies with pip:
+Install the dependencies:
+
 ```bash
+# Using pip
 pip install -r requirements.txt
-```
 
-Or with uv:
-```bash
+# Using uv (recommended for development)
 uv pip install -e .
 ```
 

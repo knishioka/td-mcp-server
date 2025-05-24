@@ -10,9 +10,17 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import requests
 from mcp.server.fastmcp import FastMCP
 
 from .api import TreasureDataClient
+
+# Constants
+DEFAULT_LIMIT = 30
+DEFAULT_ENDPOINT = "api.treasuredata.com"
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+MAX_READ_SIZE = 10 * 1024 * 1024  # 10MB
+TEMP_DIR_PERMISSIONS = 0o700
 
 # Initialize FastMCP server
 mcp = FastMCP("treasure-data")
@@ -86,7 +94,7 @@ def _safe_extract_member(member, extract_path: str) -> bool:
         return False
 
     # Check file size (prevent zip bombs)
-    if member.size > 100 * 1024 * 1024:  # 100MB limit
+    if hasattr(member, "size") and member.size > MAX_FILE_SIZE:
         return False
 
     return True
@@ -97,9 +105,47 @@ def _format_error_response(error_msg: str) -> dict[str, str]:
     return {"error": error_msg}
 
 
+def _get_api_credentials() -> tuple[str | None, str, str | None]:
+    """Get API credentials from environment variables.
+
+    Returns:
+        Tuple of (api_key, endpoint, workflow_endpoint)
+    """
+    api_key = os.environ.get("TD_API_KEY")
+    endpoint = os.environ.get("TD_ENDPOINT", DEFAULT_ENDPOINT)
+    workflow_endpoint = os.environ.get("TD_WORKFLOW_ENDPOINT")
+    return api_key, endpoint, workflow_endpoint
+
+
+def _create_client(
+    include_workflow: bool = False,
+) -> TreasureDataClient | dict[str, str]:
+    """Create TreasureDataClient with environment credentials.
+
+    Args:
+        include_workflow: Whether to include workflow endpoint
+
+    Returns:
+        TreasureDataClient instance or error dict if API key missing
+    """
+    api_key, endpoint, workflow_endpoint = _get_api_credentials()
+
+    if not api_key:
+        return _format_error_response("TD_API_KEY environment variable is not set")
+
+    kwargs = {"api_key": api_key, "endpoint": endpoint}
+    if include_workflow and workflow_endpoint:
+        kwargs["workflow_endpoint"] = workflow_endpoint
+
+    return TreasureDataClient(**kwargs)
+
+
 @mcp.tool()
 async def td_list_databases(
-    verbose: bool = False, limit: int = 30, offset: int = 0, all_results: bool = False
+    verbose: bool = False,
+    limit: int = DEFAULT_LIMIT,
+    offset: int = 0,
+    all_results: bool = False,
 ) -> dict[str, Any]:
     """Get databases in your Treasure Data account with pagination support.
 
@@ -109,14 +155,11 @@ async def td_list_databases(
         offset: Index to start retrieving from (defaults to 0)
         all_results: If True, retrieves all databases ignoring limit and offset
     """
-    api_key = os.environ.get("TD_API_KEY")
-    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
-
-    if not api_key:
-        return {"error": "TD_API_KEY environment variable is not set"}
+    client = _create_client()
+    if isinstance(client, dict):
+        return client
 
     try:
-        client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
         databases = client.get_databases(
             limit=limit, offset=offset, all_results=all_results
         )
@@ -127,8 +170,12 @@ async def td_list_databases(
         else:
             # Return only database names
             return {"databases": [db.name for db in databases]}
-    except Exception as e:
+    except (ValueError, requests.RequestException) as e:
         return _format_error_response(f"Failed to retrieve databases: {str(e)}")
+    except Exception as e:
+        return _format_error_response(
+            f"Unexpected error while retrieving databases: {str(e)}"
+        )
 
 
 @mcp.tool()
@@ -142,22 +189,23 @@ async def td_get_database(database_name: str) -> dict[str, Any]:
     if not database_name or not database_name.strip():
         return _format_error_response("Database name cannot be empty")
 
-    api_key = os.environ.get("TD_API_KEY")
-    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
-
-    if not api_key:
-        return _format_error_response("TD_API_KEY environment variable is not set")
+    client = _create_client()
+    if isinstance(client, dict):
+        return client
 
     try:
-        client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
         database = client.get_database(database_name)
         if database:
             return database.model_dump()
         else:
             return _format_error_response(f"Database '{database_name}' not found")
-    except Exception as e:
+    except (ValueError, requests.RequestException) as e:
         return _format_error_response(
             f"Failed to retrieve database '{database_name}': {str(e)}"
+        )
+    except Exception as e:
+        return _format_error_response(
+            f"Unexpected error while retrieving database '{database_name}': {str(e)}"
         )
 
 
@@ -165,7 +213,7 @@ async def td_get_database(database_name: str) -> dict[str, Any]:
 async def td_list_tables(
     database_name: str,
     verbose: bool = False,
-    limit: int = 30,
+    limit: int = DEFAULT_LIMIT,
     offset: int = 0,
     all_results: bool = False,
 ) -> dict[str, Any]:
@@ -182,15 +230,11 @@ async def td_list_tables(
     if not database_name or not database_name.strip():
         return _format_error_response("Database name cannot be empty")
 
-    api_key = os.environ.get("TD_API_KEY")
-    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
-
-    if not api_key:
-        return _format_error_response("TD_API_KEY environment variable is not set")
+    client = _create_client()
+    if isinstance(client, dict):
+        return client
 
     try:
-        client = TreasureDataClient(api_key=api_key, endpoint=endpoint)
-
         # First, verify that the database exists
         database = client.get_database(database_name)
         if not database:
@@ -213,16 +257,21 @@ async def td_list_tables(
                 "database": database_name,
                 "tables": [table.name for table in tables],
             }
-    except Exception as e:
+    except (ValueError, requests.RequestException) as e:
         return _format_error_response(
             f"Failed to retrieve tables from database '{database_name}': {str(e)}"
+        )
+    except Exception as e:
+        return _format_error_response(
+            f"Unexpected error while retrieving tables from database "
+            f"'{database_name}': {str(e)}"
         )
 
 
 @mcp.tool()
 async def td_list_projects(
     verbose: bool = False,
-    limit: int = 30,
+    limit: int = DEFAULT_LIMIT,
     offset: int = 0,
     all_results: bool = False,
     include_system: bool = False,
@@ -240,18 +289,11 @@ async def td_list_projects(
         all_results: If True, retrieves all projects ignoring limit and offset
         include_system: If True, include system-generated projects (with "sys" metadata)
     """
-    api_key = os.environ.get("TD_API_KEY")
-    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
-    workflow_endpoint = os.environ.get("TD_WORKFLOW_ENDPOINT")
-
-    if not api_key:
-        return {"error": "TD_API_KEY environment variable is not set"}
+    client = _create_client(include_workflow=True)
+    if isinstance(client, dict):
+        return client
 
     try:
-        client = TreasureDataClient(
-            api_key=api_key, endpoint=endpoint, workflow_endpoint=workflow_endpoint
-        )
-
         projects = client.get_projects(
             limit=limit, offset=offset, all_results=all_results
         )
@@ -272,8 +314,12 @@ async def td_list_projects(
                     {"id": project.id, "name": project.name} for project in projects
                 ]
             }
-    except Exception as e:
+    except (ValueError, requests.RequestException) as e:
         return _format_error_response(f"Failed to retrieve projects: {str(e)}")
+    except Exception as e:
+        return _format_error_response(
+            f"Unexpected error while retrieving projects: {str(e)}"
+        )
 
 
 @mcp.tool()
@@ -295,25 +341,23 @@ async def td_get_project(project_id: str) -> dict[str, Any]:
     if not _validate_project_id(project_id):
         return _format_error_response("Invalid project ID format")
 
-    api_key = os.environ.get("TD_API_KEY")
-    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
-    workflow_endpoint = os.environ.get("TD_WORKFLOW_ENDPOINT")
-
-    if not api_key:
-        return _format_error_response("TD_API_KEY environment variable is not set")
+    client = _create_client(include_workflow=True)
+    if isinstance(client, dict):
+        return client
 
     try:
-        client = TreasureDataClient(
-            api_key=api_key, endpoint=endpoint, workflow_endpoint=workflow_endpoint
-        )
         project = client.get_project(project_id)
         if project:
             return project.model_dump()
         else:
             return _format_error_response(f"Project with ID '{project_id}' not found")
-    except Exception as e:
+    except (ValueError, requests.RequestException) as e:
         return _format_error_response(
             f"Failed to retrieve project '{project_id}': {str(e)}"
+        )
+    except Exception as e:
+        return _format_error_response(
+            f"Unexpected error while retrieving project '{project_id}': {str(e)}"
         )
 
 
@@ -332,24 +376,17 @@ async def td_download_project_archive(project_id: str) -> dict[str, Any]:
     if not _validate_project_id(project_id):
         return _format_error_response("Invalid project ID format")
 
-    api_key = os.environ.get("TD_API_KEY")
-    endpoint = os.environ.get("TD_ENDPOINT", "api.treasuredata.com")
-    workflow_endpoint = os.environ.get("TD_WORKFLOW_ENDPOINT")
-
-    if not api_key:
-        return _format_error_response("TD_API_KEY environment variable is not set")
+    client = _create_client(include_workflow=True)
+    if isinstance(client, dict):
+        return client
 
     try:
         # Create temporary directory with secure permissions
         temp_dir = tempfile.mkdtemp(prefix="td_project_")
-        os.chmod(temp_dir, 0o700)
+        os.chmod(temp_dir, TEMP_DIR_PERMISSIONS)
         # Use sanitized project_id for filename
         safe_filename = re.sub(r"[^a-zA-Z0-9_-]", "_", project_id)
         output_path = os.path.join(temp_dir, f"project_{safe_filename}.tar.gz")
-
-        client = TreasureDataClient(
-            api_key=api_key, endpoint=endpoint, workflow_endpoint=workflow_endpoint
-        )
 
         # Check that project exists before attempting download
         project = client.get_project(project_id)
@@ -370,8 +407,12 @@ async def td_download_project_archive(project_id: str) -> dict[str, Any]:
             "temp_dir": temp_dir,
             "message": f"Successfully downloaded archive for project '{project.name}'",
         }
-    except Exception as e:
+    except (ValueError, requests.RequestException, OSError) as e:
         return _format_error_response(f"Failed to download project archive: {str(e)}")
+    except Exception as e:
+        return _format_error_response(
+            f"Unexpected error while downloading project archive: {str(e)}"
+        )
 
 
 @mcp.tool()
@@ -434,8 +475,12 @@ async def td_list_project_files(archive_path: str) -> dict[str, Any]:
             "file_count": len(file_list),
             "files": file_list,
         }
-    except Exception as e:
+    except (OSError, tarfile.ReadError) as e:
         return _format_error_response(f"Failed to list project files: {str(e)}")
+    except Exception as e:
+        return _format_error_response(
+            f"Unexpected error while listing project files: {str(e)}"
+        )
 
 
 @mcp.tool()
@@ -482,8 +527,7 @@ async def td_read_project_file(archive_path: str, file_path: str) -> dict[str, A
                         return _format_error_response("Failed to extract file")
 
                     # Read with size limit
-                    max_size = 10 * 1024 * 1024  # 10MB limit
-                    if file_info.size > max_size:
+                    if file_info.size > MAX_READ_SIZE:
                         return _format_error_response("File too large to read")
 
                     content_bytes = f.read()
@@ -512,8 +556,10 @@ async def td_read_project_file(archive_path: str, file_path: str) -> dict[str, A
                     return _format_error_response("File not found in archive")
         except tarfile.ReadError:
             return _format_error_response("Invalid or corrupted archive file")
-    except Exception as e:
+    except (OSError, UnicodeDecodeError) as e:
         return _format_error_response(f"Failed to read file: {str(e)}")
+    except Exception as e:
+        return _format_error_response(f"Unexpected error while reading file: {str(e)}")
 
 
 if __name__ == "__main__":

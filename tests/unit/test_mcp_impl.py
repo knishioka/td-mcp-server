@@ -563,10 +563,13 @@ class TestMCPImplementation:
     @pytest.mark.asyncio
     @patch("td_mcp_server.mcp_impl.TreasureDataClient")
     @patch("td_mcp_server.mcp_impl.tempfile.mkdtemp")
+    @patch("td_mcp_server.mcp_impl.os.chmod")
     @patch.dict(
         os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
     )
-    async def test_td_download_project_archive(self, mock_mkdtemp, mock_client_class):
+    async def test_td_download_project_archive(
+        self, mock_chmod, mock_mkdtemp, mock_client_class
+    ):
         """Test td_download_project_archive with successful download."""
         # Setup mocks
         mock_temp_dir = "/tmp/td_project_123"
@@ -596,11 +599,12 @@ class TestMCPImplementation:
     @pytest.mark.asyncio
     @patch("td_mcp_server.mcp_impl.TreasureDataClient")
     @patch("td_mcp_server.mcp_impl.tempfile.mkdtemp")
+    @patch("td_mcp_server.mcp_impl.os.chmod")
     @patch.dict(
         os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
     )
     async def test_td_download_project_archive_not_found(
-        self, mock_mkdtemp, mock_client_class
+        self, mock_chmod, mock_mkdtemp, mock_client_class
     ):
         """Test td_download_project_archive when project is not found."""
         # Setup mocks
@@ -623,11 +627,12 @@ class TestMCPImplementation:
     @pytest.mark.asyncio
     @patch("td_mcp_server.mcp_impl.TreasureDataClient")
     @patch("td_mcp_server.mcp_impl.tempfile.mkdtemp")
+    @patch("td_mcp_server.mcp_impl.os.chmod")
     @patch.dict(
         os.environ, {"TD_API_KEY": "test_key", "TD_ENDPOINT": "api.example.com"}
     )
     async def test_td_download_project_archive_download_failed(
-        self, mock_mkdtemp, mock_client_class
+        self, mock_chmod, mock_mkdtemp, mock_client_class
     ):
         """Test td_download_project_archive when download fails."""
         # Setup mocks
@@ -731,9 +736,7 @@ class TestMCPImplementation:
 
         # Verify the result
         assert "error" in result
-        assert (
-            "Archive file not found at path: /tmp/nonexistent.tar.gz" in result["error"]
-        )
+        assert "Archive file not found" in result["error"]
 
     @pytest.mark.asyncio
     @patch("td_mcp_server.mcp_impl.os.path.exists")
@@ -793,9 +796,7 @@ class TestMCPImplementation:
 
         # Verify the result
         assert "error" in result
-        assert (
-            "Archive file not found at path: /tmp/nonexistent.tar.gz" in result["error"]
-        )
+        assert "Archive file not found" in result["error"]
 
     @pytest.mark.asyncio
     @patch("td_mcp_server.mcp_impl.os.path.exists")
@@ -819,7 +820,7 @@ class TestMCPImplementation:
 
         # Verify the result
         assert "error" in result
-        assert "File not found in archive: nonexistent.sql" in result["error"]
+        assert "File not found in archive" in result["error"]
 
     @pytest.mark.asyncio
     @patch("td_mcp_server.mcp_impl.os.path.exists")
@@ -834,6 +835,8 @@ class TestMCPImplementation:
         # Create mock tarfile member (directory)
         mock_dir = MagicMock()
         mock_dir.isdir.return_value = True
+        mock_dir.name = "queries"
+        mock_dir.size = 0
 
         # Setup mock tar file
         mock_tar = MagicMock()
@@ -847,4 +850,4 @@ class TestMCPImplementation:
 
         # Verify the result
         assert "error" in result
-        assert "Cannot read directory contents: queries" in result["error"]
+        assert "Cannot read directory contents" in result["error"]
