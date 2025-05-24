@@ -196,7 +196,7 @@ async def td_get_database(database_name: str) -> dict[str, Any]:
     try:
         database = client.get_database(database_name)
         if database:
-            return database.model_dump()
+            return {"database": database.model_dump()}
         else:
             return _format_error_response(f"Database '{database_name}' not found")
     except (ValueError, requests.RequestException) as e:
@@ -348,7 +348,7 @@ async def td_get_project(project_id: str) -> dict[str, Any]:
     try:
         project = client.get_project(project_id)
         if project:
-            return project.model_dump()
+            return {"project": project.model_dump()}
         else:
             return _format_error_response(f"Project with ID '{project_id}' not found")
     except (ValueError, requests.RequestException) as e:
