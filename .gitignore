@@ -14,4 +14,10 @@ htmlcov/
 # Virtual environments
 .venv
 
+# Archive files
+*.tar.gz
+*.tar
+*.zip
+*.rar
+
 **/.claude/settings.local.json
