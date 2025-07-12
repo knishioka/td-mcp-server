@@ -49,6 +49,59 @@ class Metadata(BaseModel):
     value: str
 
 
+class ProjectInfo(BaseModel):
+    """Minimal project information included in workflow responses."""
+
+    id: str
+    name: str
+    updated_at: str = Field(..., alias="updatedAt")
+    last_editor: dict[str, Any] | None = Field(None, alias="lastEditor")
+
+
+class SessionAttempt(BaseModel):
+    """Model representing a workflow session attempt."""
+
+    id: str
+    retry_attempt_name: str | None = Field(None, alias="retryAttemptName")
+    done: bool
+    success: bool
+    cancel_requested: bool = Field(..., alias="cancelRequested")
+    params: dict[str, Any] = {}
+    created_at: str = Field(..., alias="createdAt")
+    finished_at: str | None = Field(None, alias="finishedAt")
+    status: str
+
+
+class Session(BaseModel):
+    """Model representing a workflow session."""
+
+    id: str
+    project: dict[str, Any]
+    workflow: dict[str, Any]
+    session_uuid: str = Field(..., alias="sessionUuid")
+    session_time: str = Field(..., alias="sessionTime")
+    last_attempt: SessionAttempt = Field(..., alias="lastAttempt")
+
+
+class Workflow(BaseModel):
+    """
+    Model representing a Treasure Data workflow.
+
+    A workflow in Treasure Data is a set of tasks defined in a Digdag file (.dig)
+    that specifies data processing steps, their dependencies, and execution order.
+    Workflows are contained within projects and can be scheduled or run manually.
+    """
+
+    id: str
+    name: str
+    project: ProjectInfo
+    revision: str
+    timezone: str
+    config: dict[str, Any] = {}
+    schedule: dict[str, Any] | None = None
+    latest_sessions: list[Session] = Field(default_factory=list, alias="latestSessions")
+
+
 class Project(BaseModel):
     """
     Model representing a Treasure Data workflow project.
@@ -240,6 +293,9 @@ class TreasureDataClient:
         These workflows are executed on the Treasure Data platform for scheduled
         data pipelines, ETL processes, and other automation tasks.
 
+        Note: The API uses 'count' parameter for limiting results, but this method
+        provides limit/offset interface for consistency with other methods.
+
         Args:
             limit: Maximum number of projects to retrieve (defaults to 30)
             offset: Index to start retrieving from (defaults to 0)
@@ -251,19 +307,21 @@ class TreasureDataClient:
         Raises:
             requests.HTTPError: If the API returns an error response
         """
+        # The projects API uses 'count' parameter, not limit/offset
+        # Request more data if offset is specified
+        count = 100 if all_results else offset + limit
+
+        params = {"count": count}
         response = self._make_request(
-            "GET", "projects", base_url=self.workflow_base_url
+            "GET", "projects", base_url=self.workflow_base_url, params=params
         )
         all_projects = [Project(**project) for project in response.get("projects", [])]
 
         if all_results:
             return all_projects
         else:
-            end_index = (
-                offset + limit
-                if offset + limit <= len(all_projects)
-                else len(all_projects)
-            )
+            # Apply offset and limit on the client side
+            end_index = min(offset + limit, len(all_projects))
             return all_projects[offset:end_index]
 
     def get_project(self, project_id: str) -> Project | None:
@@ -349,3 +407,53 @@ class TreasureDataClient:
             ):
                 raise
             return False
+
+    def get_workflows(
+        self,
+        count: int = 100,
+        all_results: bool = False,
+    ) -> list[Workflow]:
+        """
+        Retrieve a list of workflows across all projects.
+
+        This method retrieves workflows from the Treasure Data workflow console API.
+        Workflows are the actual executable units that contain tasks defined in
+        Digdag files (.dig). Each workflow belongs to a project and can have
+        multiple sessions (execution instances).
+
+        Args:
+            count: Maximum number of workflows to retrieve (defaults to 100)
+            all_results: If True, retrieves all workflows up to count limit
+
+        Returns:
+            A list of Workflow objects
+
+        Raises:
+            requests.HTTPError: If the API returns an error response
+        """
+        # Use the console workflows endpoint as discovered
+        params = {
+            "count": count,
+            "order": "asc",
+            "sessions": 5,  # Include last 5 sessions for each workflow
+            "output": "simple",
+            "project_type": "user",
+        }
+
+        # Build console URL using the workflow endpoint
+        # The console API is available at the same endpoint as the workflow API
+        response = requests.get(
+            f"{self.workflow_base_url}/console/workflows",
+            headers=self.headers,
+            params=params,
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        workflows = [Workflow(**workflow) for workflow in data.get("workflows", [])]
+
+        if all_results:
+            return workflows
+        else:
+            # Return up to count workflows
+            return workflows[:count]

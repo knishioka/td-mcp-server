@@ -562,6 +562,111 @@ async def td_read_project_file(archive_path: str, file_path: str) -> dict[str, A
         return _format_error_response(f"Unexpected error while reading file: {str(e)}")
 
 
+@mcp.tool()
+async def td_list_workflows(
+    verbose: bool = False,
+    count: int = 100,
+    include_system: bool = False,
+    status_filter: str | None = None,
+) -> dict[str, Any]:
+    """Get workflows across all projects in your Treasure Data account.
+
+    Workflows are the executable units in Treasure Data that contain tasks defined
+    in Digdag files (.dig). Each workflow belongs to a project and represents a
+    data processing pipeline that can be scheduled or run manually. This tool
+    retrieves workflows from all projects, showing their execution status and
+    recent session history.
+
+    Args:
+        verbose: If True, return full details including sessions; if False,
+            return summary (default)
+        count: Maximum number of workflows to retrieve (defaults to 100, max 12000)
+        include_system: If True, include system-generated workflows (with "sys"
+            metadata)
+        status_filter: Filter workflows by their last session status ('success',
+            'error', 'running', None for all)
+    """
+    client = _create_client(include_workflow=True)
+    if isinstance(client, dict):
+        return client
+
+    try:
+        workflows = client.get_workflows(count=min(count, 12000), all_results=True)
+
+        # Filter out system workflows if requested
+        if not include_system:
+            workflows = [
+                w
+                for w in workflows
+                if not any(
+                    meta.key == "sys"
+                    for meta in w.project.model_dump().get("metadata", [])
+                )
+            ]
+
+        # Filter by status if requested
+        if status_filter:
+            filtered_workflows = []
+            for workflow in workflows:
+                if workflow.latest_sessions:
+                    last_status = workflow.latest_sessions[0].last_attempt.status
+                    if last_status == status_filter:
+                        filtered_workflows.append(workflow)
+            workflows = filtered_workflows
+
+        if verbose:
+            # Return full workflow details including sessions
+            return {
+                "workflows": [
+                    {
+                        "id": w.id,
+                        "name": w.name,
+                        "project": {
+                            "id": w.project.id,
+                            "name": w.project.name,
+                        },
+                        "timezone": w.timezone,
+                        "schedule": w.schedule,
+                        "latest_sessions": [
+                            {
+                                "session_time": s.session_time,
+                                "status": s.last_attempt.status,
+                                "success": s.last_attempt.success,
+                                "duration": None,  # Would need date parsing
+                            }
+                            for s in w.latest_sessions[:3]  # Show last 3 sessions
+                        ],
+                    }
+                    for w in workflows
+                ]
+            }
+        else:
+            # Return summary information
+            return {
+                "workflows": [
+                    {
+                        "id": w.id,
+                        "name": w.name,
+                        "project": w.project.name,
+                        "last_status": (
+                            w.latest_sessions[0].last_attempt.status
+                            if w.latest_sessions
+                            else "no_runs"
+                        ),
+                        "scheduled": w.schedule is not None,
+                    }
+                    for w in workflows
+                ],
+                "total_count": len(workflows),
+            }
+    except (ValueError, requests.RequestException) as e:
+        return _format_error_response(f"Failed to retrieve workflows: {str(e)}")
+    except Exception as e:
+        return _format_error_response(
+            f"Unexpected error while retrieving workflows: {str(e)}"
+        )
+
+
 if __name__ == "__main__":
     # Initialize and run the server
     mcp.run(transport="stdio")

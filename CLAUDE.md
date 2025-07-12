@@ -2,6 +2,36 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## API Development Guidelines
+
+### API Endpoint Testing
+
+When working with APIs in this project:
+
+1. **Use curl for API endpoint verification**
+   - Always test API endpoints directly with curl first
+   - Parse responses using jq for structured data extraction
+   - Avoid creating unnecessary test scripts
+
+   Example:
+   ```bash
+   # Test API endpoint
+   curl -s -H "Authorization: TD1 $TD_API_KEY" "https://api.treasuredata.com/v3/database/list" | jq '.'
+
+   # Extract specific fields
+   curl -s -H "Authorization: TD1 $TD_API_KEY" "https://api.treasuredata.com/v3/database/list" | jq '.databases[].name'
+   ```
+
+2. **Minimal testing approach**
+   - Use inline Python commands with `uv run python -c` for quick validation
+   - Avoid creating separate test files unless absolutely necessary
+   - Leverage existing test infrastructure rather than creating new test scripts
+
+3. **API exploration workflow**
+   - First: Test endpoint with curl and jq
+   - Second: Implement based on actual API response
+   - Third: Validate with minimal inline code
+
 ## Important Development Guidelines
 
 ### Code Quality Standards

@@ -169,6 +169,34 @@ This MCP server provides the following tools for interacting with Treasure Data:
      td_read_project_file archive_path=/tmp/td_project_123/project_123456.tar.gz file_path=workflow.dig
      ```
 
+7. **td_list_workflows**
+   ```python
+   td_list_workflows(verbose=False, count=100, include_system=False, status_filter=None)
+   ```
+   - Get workflows across all projects in your Treasure Data account
+   - **Parameters**:
+     - `verbose`: If True, return full details including sessions; if False, return summary (default)
+     - `count`: Maximum number of workflows to retrieve (defaults to 100, max 12000)
+     - `include_system`: If True, include system-generated workflows (with "sys" metadata)
+     - `status_filter`: Filter workflows by their last session status ('success', 'error', 'running', None for all)
+   - **Examples**:
+     ```
+     # Get workflow summary (default)
+     td_list_workflows
+
+     # Get full workflow details with recent sessions
+     td_list_workflows verbose=True
+
+     # Get only failed workflows
+     td_list_workflows status_filter=error
+
+     # Get successful workflows including system workflows
+     td_list_workflows status_filter=success include_system=True
+
+     # Get more workflows (up to 12000)
+     td_list_workflows count=500
+     ```
+
 ## Setup Instructions
 
 ### Authentication
