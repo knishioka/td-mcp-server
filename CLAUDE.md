@@ -36,7 +36,7 @@ When working with APIs in this project:
 
 ### Code Quality Standards
 
-This project uses pre-commit hooks to enforce several code quality standards:
+This project uses pre-commit hooks to enforce several code quality and security standards:
 
 #### Trailing Whitespace
 
@@ -53,6 +53,18 @@ This project uses pre-commit hooks to enforce several code quality standards:
 - The pre-commit hook 'end-of-file-fixer' enforces this requirement
 - When creating or editing files with Claude Code, always ensure there is a newline at the end of the file
 - This is a standard convention in Unix/Linux systems and helps prevent issues with certain tools
+
+#### Secret Detection (Gitleaks)
+
+- **CRITICAL**: Gitleaks scans for secrets (API keys, tokens, etc.) in commits
+- **Treasure Data API Key Protection**: Specifically configured to detect TD API key patterns
+- The hook will **block commits** containing potential secrets
+- Common patterns detected:
+  - `TD_API_KEY="actual_key"`
+  - `123456/a1b2c3d4e5f6789012345678901234567890abcd` (TD API key format)
+  - Generic API keys and secrets
+- **Allowlisted files**: Tests, docs, lock files (uv.lock, poetry.lock, etc.)
+- **Emergency bypass**: Use `git commit --no-verify` only if absolutely necessary
 
 ### Documentation Guidelines
 
@@ -115,8 +127,24 @@ uv run pre-commit run trailing-whitespace --all-files
 # Check and fix end-of-file issues
 uv run pre-commit run end-of-file-fixer --all-files
 
+# Run secret detection only
+uv run pre-commit run gitleaks --all-files
+
 # Run all formatting and linting
 uv run ruff format td_mcp_server tests && uv run ruff check --fix td_mcp_server tests
+```
+
+**Secret Detection Commands**
+
+```bash
+# Scan entire repository for secrets
+uv run gitleaks detect --config=.gitleaks.toml --verbose
+
+# Scan specific file
+uv run gitleaks detect --source=path/to/file --config=.gitleaks.toml
+
+# Scan without git (for single files)
+uv run gitleaks detect --source=path/to/file --config=.gitleaks.toml --no-git
 ```
 
 ### Commit Workflow for Claude Code
