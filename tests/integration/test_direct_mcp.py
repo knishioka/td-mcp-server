@@ -126,8 +126,8 @@ class TestDirectMCPIntegration:
 
         # Success case
         result = await td_get_database(database_name="db1")
-        assert "name" in result
-        assert result["name"] == "db1"
+        assert "database" in result
+        assert result["database"]["name"] == "db1"
 
         # Not found case
         result = await td_get_database(database_name="nonexistent")

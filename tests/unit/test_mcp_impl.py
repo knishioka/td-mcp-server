@@ -223,8 +223,9 @@ class TestMCPImplementation:
         result = await td_get_database(database_name="db1")
 
         # Verify the result
-        assert result["name"] == "db1"
-        assert result["count"] == 3
+        assert "database" in result
+        assert result["database"]["name"] == "db1"
+        assert result["database"]["count"] == 3
         assert mock_client.get_database.called
         mock_client.get_database.assert_called_with("db1")
 
@@ -536,8 +537,9 @@ class TestMCPImplementation:
         result = await td_get_project(project_id="123456")
 
         # Verify the result
-        assert result["id"] == "123456"
-        assert result["name"] == "demo_content_affinity"
+        assert "project" in result
+        assert result["project"]["id"] == "123456"
+        assert result["project"]["name"] == "demo_content_affinity"
         assert mock_client.get_project.called
         mock_client.get_project.assert_called_with("123456")
 
