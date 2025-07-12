@@ -158,7 +158,7 @@ gh run view --log
    - Push fix: `git add . && git commit -m "Fix CI issues" && git push`
 3. **Re-verify**: Check GitHub Actions again until ✅ Success
 
-### Current Known Issues (as of 2025-05-24)
+### Current Known Issues (as of 2025-07-12)
 
 **GitHub Actions Status**: ❌ **Python Tests and Linting workflow is FAILING**
 
