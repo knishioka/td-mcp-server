@@ -26,7 +26,7 @@ class TestMCPProtocolCompliance:
         tools = await mcp.list_tools()
 
         # Verify we have the expected number of tools
-        assert len(tools) == 8, f"Expected 8 tools, got {len(tools)}"
+        assert len(tools) == 9, f"Expected 9 tools, got {len(tools)}"
 
         # Verify each tool has required MCP protocol fields
         expected_tools = [
@@ -38,6 +38,7 @@ class TestMCPProtocolCompliance:
             "td_download_project_archive",
             "td_list_project_files",
             "td_read_project_file",
+            "td_list_workflows",
         ]
 
         tool_names = [tool.name for tool in tools]
@@ -299,6 +300,7 @@ class TestMCPProtocolCompliance:
             td_list_project_files,
             td_list_projects,
             td_list_tables,
+            td_list_workflows,
             td_read_project_file,
         )
 
@@ -311,6 +313,7 @@ class TestMCPProtocolCompliance:
             td_download_project_archive,
             td_list_project_files,
             td_read_project_file,
+            td_list_workflows,
         ]
 
         for tool_func in tools:
