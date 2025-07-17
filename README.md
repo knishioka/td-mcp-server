@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/knishioka-td-mcp-server-badge.png)](https://mseep.ai/app/knishioka-td-mcp-server)
+
 # Treasure Data MCP Server
 
 A Model Context Protocol (MCP) server that provides Treasure Data API integration for Claude Code and Claude Desktop.
