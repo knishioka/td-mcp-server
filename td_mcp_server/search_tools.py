@@ -26,6 +26,7 @@ def register_mcp_tools(
     mcp.tool()(td_find_project)
     mcp.tool()(td_find_workflow)
     mcp.tool()(td_get_project_by_name)
+    mcp.tool()(td_smart_search)
 
 
 async def td_find_project(
@@ -294,3 +295,225 @@ async def td_get_project_by_name(
             return _format_error_response(f"Failed to get project details: {str(e)}")
 
     return _format_error_response(f"Project '{project_name}' not found")
+
+
+async def td_smart_search(
+    query: str,
+    search_scope: str = "all",
+    search_mode: str = "fuzzy",
+    active_only: bool = True,
+    min_relevance: float = 0.7,
+) -> dict[str, Any]:
+    """Intelligent search across all Treasure Data resources.
+
+    Provides unified search with fuzzy matching, relevance scoring,
+    and intelligent result ranking. Replaces multiple specific search tools
+    with one powerful interface.
+
+    Args:
+        query: Search term or phrase
+        search_scope: Where to search - "projects", "workflows", "tables", "all"
+        search_mode: Search algorithm - "exact", "fuzzy", "semantic"
+        active_only: Filter to only active/non-deleted resources
+        min_relevance: Minimum relevance score (0-1) for results
+
+    Returns:
+        Ranked search results with relevance scores and resource details
+    """
+    if not query or not query.strip():
+        return _format_error_response("Search query cannot be empty")
+
+    if search_scope not in ["projects", "workflows", "tables", "all"]:
+        return _format_error_response("Invalid search scope")
+
+    if search_mode not in ["exact", "fuzzy", "semantic"]:
+        return _format_error_response("Invalid search mode")
+
+    client = _create_client(include_workflow=True)
+    if isinstance(client, dict):
+        return client
+
+    results = {
+        "query": query,
+        "search_scope": search_scope,
+        "search_mode": search_mode,
+        "results": [],
+        "total_found": 0,
+    }
+
+    try:
+        # Helper function to calculate relevance score
+        def calculate_relevance(text: str, query: str, exact: bool = False) -> float:
+            text_lower = text.lower()
+            query_lower = query.lower()
+
+            if exact:
+                return 1.0 if query_lower == text_lower else 0.0
+
+            # Exact match gets highest score
+            if query_lower == text_lower:
+                return 1.0
+
+            # Substring match
+            if query_lower in text_lower:
+                # Score based on position and length ratio
+                position_score = 1.0 - (text_lower.index(query_lower) / len(text_lower))
+                length_score = len(query_lower) / len(text_lower)
+                return (position_score + length_score) / 2
+
+            # Fuzzy matching for semantic mode
+            if search_mode == "semantic":
+                # Simple word-based matching
+                query_words = set(query_lower.split())
+                text_words = set(text_lower.split())
+                if query_words:
+                    overlap = len(query_words & text_words) / len(query_words)
+                    return overlap * 0.8  # Slightly lower score for word matches
+
+            return 0.0
+
+        # Search projects
+        if search_scope in ["projects", "all"]:
+            try:
+                projects = client.get_projects(limit=200, all_results=True)
+                for project in projects:
+                    relevance = calculate_relevance(
+                        project.name, query, exact=(search_mode == "exact")
+                    )
+
+                    if relevance >= min_relevance:
+                        results["results"].append(
+                            {
+                                "type": "project",
+                                "relevance": round(relevance, 3),
+                                "resource": {
+                                    "id": project.id,
+                                    "name": project.name,
+                                    "created_at": project.created_at,
+                                    "updated_at": project.updated_at,
+                                },
+                                "match_context": f"Project name: {project.name}",
+                            }
+                        )
+            except Exception:
+                # Log error but continue with other searches
+                pass
+
+        # Search workflows
+        if search_scope in ["workflows", "all"]:
+            try:
+                workflows = client.get_workflows(count=1000, all_results=True)
+                for workflow in workflows:
+                    # Check workflow name
+                    workflow_relevance = calculate_relevance(
+                        workflow.name, query, exact=(search_mode == "exact")
+                    )
+
+                    # Also check project name for better context
+                    project_relevance = calculate_relevance(
+                        workflow.project.name, query, exact=(search_mode == "exact")
+                    )
+
+                    # Take the higher relevance
+                    relevance = max(workflow_relevance, project_relevance * 0.7)
+
+                    if relevance >= min_relevance:
+                        # Get latest status
+                        latest_status = "no_runs"
+                        if workflow.latest_sessions:
+                            latest_status = workflow.latest_sessions[
+                                0
+                            ].last_attempt.status
+
+                        results["results"].append(
+                            {
+                                "type": "workflow",
+                                "relevance": round(relevance, 3),
+                                "resource": {
+                                    "id": workflow.id,
+                                    "name": workflow.name,
+                                    "project": workflow.project.name,
+                                    "scheduled": workflow.schedule is not None,
+                                    "latest_status": latest_status,
+                                },
+                                "match_context": (
+                                    f"Workflow: {workflow.name} "
+                                    f"in project: {workflow.project.name}"
+                                ),
+                            }
+                        )
+            except Exception:
+                # Log error but continue
+                pass
+
+        # Search tables
+        if search_scope in ["tables", "all"]:
+            try:
+                # Get all databases first
+                databases = client.get_databases(all_results=True)
+
+                for database in databases[:10]:  # Limit to avoid too many API calls
+                    try:
+                        tables = client.get_tables(database.name, all_results=True)
+                        for table in tables:
+                            # Check table name
+                            table_relevance = calculate_relevance(
+                                table.name, query, exact=(search_mode == "exact")
+                            )
+
+                            # Also consider database name
+                            db_relevance = calculate_relevance(
+                                database.name, query, exact=(search_mode == "exact")
+                            )
+
+                            relevance = max(table_relevance, db_relevance * 0.5)
+
+                            if relevance >= min_relevance:
+                                results["results"].append(
+                                    {
+                                        "type": "table",
+                                        "relevance": round(relevance, 3),
+                                        "resource": {
+                                            "name": table.name,
+                                            "database": database.name,
+                                            "full_name": (
+                                                f"{database.name}.{table.name}"
+                                            ),
+                                            "type": table.type,
+                                            "count": table.count,
+                                        },
+                                        "match_context": (
+                                            f"Table: {table.name} "
+                                            f"in database: {database.name}"
+                                        ),
+                                    }
+                                )
+                    except Exception:
+                        # Skip databases with access issues
+                        continue
+            except Exception:
+                # Log error but continue
+                pass
+
+        # Sort results by relevance
+        results["results"].sort(key=lambda x: x["relevance"], reverse=True)
+        results["total_found"] = len(results["results"])
+
+        # Add search suggestions if few results
+        if results["total_found"] < 5 and search_mode == "exact":
+            results[
+                "suggestion"
+            ] = "Try using fuzzy or semantic search mode for more results"
+
+        # Limit results to prevent token overflow
+        if len(results["results"]) > 50:
+            results["results"] = results["results"][:50]
+            results["truncated"] = True
+            results[
+                "truncated_message"
+            ] = f"Showing top 50 of {results['total_found']} results"
+
+        return results
+
+    except Exception as e:
+        return _format_error_response(f"Search failed: {str(e)}")

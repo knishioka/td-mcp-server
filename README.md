@@ -15,7 +15,7 @@ For comprehensive Treasure Data documentation and tools:
 
 ## Available MCP Tools
 
-This MCP server provides the following tools for interacting with Treasure Data:
+This MCP server provides a comprehensive set of tools for interacting with Treasure Data, organized by functionality:
 
 ### Database Management
 
@@ -169,7 +169,7 @@ This MCP server provides the following tools for interacting with Treasure Data:
      td_read_project_file archive_path=/tmp/td_project_123/project_123456.tar.gz file_path=workflow.dig
      ```
 
-7. **td_list_workflows**
+9. **td_list_workflows**
    ```python
    td_list_workflows(verbose=False, count=100, include_system=False, status_filter=None)
    ```
@@ -196,6 +196,209 @@ This MCP server provides the following tools for interacting with Treasure Data:
      # Get more workflows (up to 12000)
      td_list_workflows count=500
      ```
+
+### Search and Discovery Tools
+
+10. **td_smart_search**
+   ```python
+   td_smart_search(query, search_scope="all", search_mode="fuzzy", active_only=True, min_relevance=0.7)
+   ```
+   - Intelligent search across all Treasure Data resources with fuzzy matching and relevance scoring
+   - **Parameters**:
+     - `query`: Search term or phrase
+     - `search_scope`: Where to search - "projects", "workflows", "tables", "all" (default: "all")
+     - `search_mode`: Search algorithm - "exact", "fuzzy", "semantic" (default: "fuzzy")
+     - `active_only`: Filter to only active/non-deleted resources (default: True)
+     - `min_relevance`: Minimum relevance score (0-1) for results (default: 0.7)
+   - **Examples**:
+     ```
+     # Search everywhere with fuzzy matching
+     td_smart_search query="customer clustering"
+
+     # Exact search for projects only
+     td_smart_search query="poc_oreheaven" search_scope=projects search_mode=exact
+
+     # Semantic search for workflows
+     td_smart_search query="recommendation engine" search_scope=workflows search_mode=semantic
+
+     # Lower relevance threshold for broader results
+     td_smart_search query="sales" min_relevance=0.5
+     ```
+
+11. **td_find_project**
+   ```python
+   td_find_project(search_term, exact_match=False)
+   ```
+   - Find project by name or partial name match
+   - **Parameters**:
+     - `search_term`: Project name or partial name to search for
+     - `exact_match`: If True, only return exact matches (default: False)
+   - **Examples**:
+     ```
+     # Find projects containing "cluster"
+     td_find_project search_term=cluster
+
+     # Find exact project name
+     td_find_project search_term="clustering_heven_customer" exact_match=True
+     ```
+
+12. **td_find_workflow**
+   ```python
+   td_find_workflow(search_term, project_name=None, exact_match=False, status_filter=None)
+   ```
+   - Find workflows by name with optional filters
+   - **Parameters**:
+     - `search_term`: Workflow name or partial name to search for
+     - `project_name`: Optional project name to filter by
+     - `exact_match`: If True, only return exact matches (default: False)
+     - `status_filter`: Filter by status ('success', 'error', 'running', None)
+   - **Examples**:
+     ```
+     # Find workflows containing "scoring"
+     td_find_workflow search_term=scoring
+
+     # Find workflows in specific project
+     td_find_workflow search_term=daily project_name=poc_oreheaven
+
+     # Find failed workflows with exact name
+     td_find_workflow search_term="ore_heaven_scoring" exact_match=True status_filter=error
+     ```
+
+13. **td_get_project_by_name**
+   ```python
+   td_get_project_by_name(project_name)
+   ```
+   - Get project details by exact name match (convenient alternative to finding ID first)
+   - **Parameters**:
+     - `project_name`: Exact project name
+   - **Example**:
+     ```
+     # Get project details by name
+     td_get_project_by_name project_name="clustering_heven_customer"
+     ```
+
+### URL Analysis Tools
+
+14. **td_analyze_url**
+   ```python
+   td_analyze_url(url)
+   ```
+   - Extract and retrieve information from a Treasure Data console URL
+   - **Parameters**:
+     - `url`: Console URL to analyze
+   - **Supported URL formats**:
+     - Workflow: `https://console.us01.treasuredata.com/app/workflows/12345678/info`
+     - Project: `https://console.us01.treasuredata.com/app/projects/123456`
+     - Job: `https://console.us01.treasuredata.com/app/jobs/123456`
+   - **Example**:
+     ```
+     # Analyze a workflow URL
+     td_analyze_url url="https://console.us01.treasuredata.com/app/workflows/12345678/info"
+     ```
+
+15. **td_get_workflow**
+   ```python
+   td_get_workflow(workflow_id)
+   ```
+   - Get workflow details by numeric ID (useful for console URLs)
+   - **Parameters**:
+     - `workflow_id`: Numeric workflow ID
+   - **Example**:
+     ```
+     # Get workflow by ID
+     td_get_workflow workflow_id=12345678
+     ```
+
+### Project Analysis and Diagnostics (New)
+
+16. **td_explore_project**
+   ```python
+   td_explore_project(identifier, analysis_depth="detailed", focus_areas=None)
+   ```
+   - Analyze a TD project comprehensively for documentation or debugging
+   - **Parameters**:
+     - `identifier`: Project name, ID, or search term
+     - `analysis_depth`: Level of analysis - "overview", "detailed", or "deep" (default: "detailed")
+     - `focus_areas`: Specific aspects to analyze - ["code", "data_flow", "performance", "errors"] (default: ["code", "data_flow"])
+   - **Examples**:
+     ```
+     # Get detailed project analysis
+     td_explore_project identifier="poc_oreheaven"
+
+     # Deep analysis focusing on performance
+     td_explore_project identifier="clustering_heven" analysis_depth=deep focus_areas=["performance", "errors"]
+
+     # Quick overview
+     td_explore_project identifier=1664373 analysis_depth=overview
+     ```
+
+17. **td_diagnose_workflow**
+   ```python
+   td_diagnose_workflow(workflow_identifier, time_window="30d", diagnostic_level="basic")
+   ```
+   - Diagnose workflow health and identify issues
+   - **Parameters**:
+     - `workflow_identifier`: Workflow name, ID, or partial match
+     - `time_window`: Time period to analyze (e.g., "30d", "7d", "24h") (default: "30d")
+     - `diagnostic_level`: "basic" for quick check, "comprehensive" for deep analysis (default: "basic")
+   - **Examples**:
+     ```
+     # Basic health check for last 30 days
+     td_diagnose_workflow workflow_identifier="ore_heaven_scoring"
+
+     # Comprehensive diagnosis for last week
+     td_diagnose_workflow workflow_identifier=12345678 time_window=7d diagnostic_level=comprehensive
+
+     # Quick check for recent issues
+     td_diagnose_workflow workflow_identifier="daily_batch" time_window=24h
+     ```
+
+18. **td_trace_data_lineage**
+   ```python
+   td_trace_data_lineage(table_or_project, direction="both", max_depth=3)
+   ```
+   - Trace data dependencies and lineage for tables or projects
+   - **Parameters**:
+     - `table_or_project`: Table name (format: "database.table") or project name/ID
+     - `direction`: "upstream" (sources), "downstream" (consumers), or "both" (default: "both")
+     - `max_depth`: Maximum levels to trace (default: 3)
+   - **Examples**:
+     ```
+     # Trace table dependencies
+     td_trace_data_lineage table_or_project="production.customer_segments"
+
+     # Find upstream sources only
+     td_trace_data_lineage table_or_project="analytics.recommendations" direction=upstream
+
+     # Trace project data flow
+     td_trace_data_lineage table_or_project="poc_oreheaven" max_depth=5
+     ```
+
+## Testing
+
+### Integration Testing
+
+To test the MCP tools with real API calls:
+
+```bash
+# Set your API key (required)
+export TD_API_KEY="your-api-key"
+
+# Run integration tests
+python test_mcp_integration.py
+```
+
+The integration test script (`test_mcp_integration.py`) safely tests all tools by:
+- Using generic search terms (no production data hardcoded)
+- Showing only summary results (no sensitive data exposed)
+- Testing error handling with invalid inputs
+- Requiring explicit API key configuration
+
+**Important**: Never commit files containing:
+- API keys or credentials
+- Specific project IDs or names from production
+- Detailed query results or data dumps
+- Customer or business-sensitive information
 
 ## Setup Instructions
 

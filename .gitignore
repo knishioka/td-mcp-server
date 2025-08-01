@@ -21,3 +21,9 @@ htmlcov/
 *.rar
 
 **/.claude/settings.local.json
+
+# Temporary test files
+simple_test.py
+test_diagnose_fix.py
+test_mcp_tools.py
+test_new_tools.py

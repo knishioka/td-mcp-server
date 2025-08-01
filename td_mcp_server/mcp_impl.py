@@ -13,7 +13,7 @@ from typing import Any
 import requests
 from mcp.server.fastmcp import FastMCP
 
-from . import search_tools, url_tools
+from . import diagnostic_tools, exploration_tools, search_tools, url_tools
 from .api import TreasureDataClient
 
 # Constants
@@ -651,6 +651,16 @@ search_tools.register_mcp_tools(
     mcp, _create_client, _format_error_response, _validate_project_id
 )
 url_tools.register_url_tools(mcp, _create_client, _format_error_response)
+
+# Register new exploration and diagnostic tools
+exploration_tools.register_exploration_tools(
+    mcp,
+    _create_client,
+    _format_error_response,
+    _validate_project_id,
+    _safe_extract_member,
+)
+diagnostic_tools.register_diagnostic_tools(mcp, _create_client, _format_error_response)
 
 if __name__ == "__main__":
     # Initialize and run the server
