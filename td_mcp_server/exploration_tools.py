@@ -29,7 +29,12 @@ def register_exploration_tools(
     safe_extract_func,
 ):
     """Register exploration tools with the provided MCP instance."""
-    global mcp, _create_client, _format_error_response, _validate_project_id, _safe_extract_member
+    global \
+        mcp, \
+        _create_client, \
+        _format_error_response, \
+        _validate_project_id, \
+        _safe_extract_member
     mcp = mcp_instance
     _create_client = create_client_func
     _format_error_response = format_error_func
@@ -59,11 +64,9 @@ def _analyze_sql_file(content: str) -> dict[str, Any]:
     for pattern, issue_type in hardcoded_patterns:
         matches = re.findall(pattern, content, re.IGNORECASE)
         if matches:
-            analysis["issues"].append({
-                "type": issue_type,
-                "count": len(matches),
-                "examples": matches[:3]
-            })
+            analysis["issues"].append(
+                {"type": issue_type, "count": len(matches), "examples": matches[:3]}
+            )
 
     # Analyze query patterns
     if "SELECT" in content.upper():
@@ -75,11 +78,13 @@ def _analyze_sql_file(content: str) -> dict[str, Any]:
 
     # Check for potential performance issues
     if re.search(r"SELECT\s+\*", content, re.IGNORECASE):
-        analysis["issues"].append({
-            "type": "select_star",
-            "severity": "medium",
-            "message": "Consider selecting specific columns instead of *"
-        })
+        analysis["issues"].append(
+            {
+                "type": "select_star",
+                "severity": "medium",
+                "message": "Consider selecting specific columns instead of *",
+            }
+        )
 
     return analysis
 
@@ -116,7 +121,9 @@ def _analyze_dig_file(content: str) -> dict[str, Any]:
             analysis["operators"][operator] += 1
 
     # Analyze workflow complexity
-    analysis["complexity_score"] = len(analysis["tasks"]) * 0.5 + sum(analysis["operators"].values()) * 0.3
+    analysis["complexity_score"] = (
+        len(analysis["tasks"]) * 0.5 + sum(analysis["operators"].values()) * 0.3
+    )
 
     return analysis
 
@@ -172,11 +179,13 @@ def _detect_duplication(files_content: dict[str, str]) -> dict[str, Any]:
         content_hash = hashlib.md5(normalized.encode()).hexdigest()
 
         if content_hash in file_hashes:
-            duplication_info["similar_files"].append({
-                "file1": file_hashes[content_hash],
-                "file2": filepath,
-                "similarity": "exact_match"
-            })
+            duplication_info["similar_files"].append(
+                {
+                    "file1": file_hashes[content_hash],
+                    "file2": filepath,
+                    "similarity": "exact_match",
+                }
+            )
         else:
             file_hashes[content_hash] = filepath
 
@@ -201,10 +210,12 @@ async def td_explore_project(
     Args:
         identifier: Project name, ID, or search term
         analysis_depth: Level of analysis - "overview", "detailed", or "deep"
-        focus_areas: Specific aspects to analyze - ["code", "data_flow", "performance", "errors"]
+        focus_areas: Specific aspects to analyze - ["code", "data_flow", "performance",
+            "errors"]
 
     Returns:
-        Comprehensive project analysis including structure, patterns, and recommendations
+        Comprehensive project analysis including structure, patterns, and
+        recommendations
     """
     if not identifier or not identifier.strip():
         return _format_error_response("Project identifier cannot be empty")
@@ -271,7 +282,7 @@ async def td_explore_project(
             # Download project archive
             success = client.download_project_archive(project_id, str(archive_path))
             if not success:
-                return _format_error_response(f"Failed to download project archive")
+                return _format_error_response("Failed to download project archive")
 
             # Extract and analyze files
             files_info = []
@@ -303,15 +314,19 @@ async def td_explore_project(
                                     files_content[member.name] = content
 
                                     if ext == ".sql":
-                                        sql_analyses.append({
-                                            "file": member.name,
-                                            "analysis": _analyze_sql_file(content)
-                                        })
+                                        sql_analyses.append(
+                                            {
+                                                "file": member.name,
+                                                "analysis": _analyze_sql_file(content),
+                                            }
+                                        )
                                     elif ext == ".dig":
-                                        dig_analyses.append({
-                                            "file": member.name,
-                                            "analysis": _analyze_dig_file(content)
-                                        })
+                                        dig_analyses.append(
+                                            {
+                                                "file": member.name,
+                                                "analysis": _analyze_dig_file(content),
+                                            }
+                                        )
                             except Exception:
                                 pass  # Skip files that can't be read
 
@@ -338,24 +353,33 @@ async def td_explore_project(
                             hardcoded_count += issue.get("count", 0)
 
                 if hardcoded_count > 0:
-                    code_analysis["issues"].append({
-                        "type": "hardcoded_values",
-                        "count": hardcoded_count,
-                        "severity": "medium",
-                        "recommendation": "Consider using parameters or configuration files"
-                    })
+                    code_analysis["issues"].append(
+                        {
+                            "type": "hardcoded_values",
+                            "count": hardcoded_count,
+                            "severity": "medium",
+                            "recommendation": (
+                                "Consider using parameters or configuration files"
+                            ),
+                        }
+                    )
 
                 # Detect code duplication
                 if analysis_depth == "deep":
                     duplication = _detect_duplication(files_content)
                     code_analysis["duplication"] = duplication
                     if duplication["duplication_ratio"] > 0.3:
-                        code_analysis["issues"].append({
-                            "type": "high_duplication",
-                            "severity": "high",
-                            "ratio": duplication["duplication_ratio"],
-                            "recommendation": "Consider refactoring duplicated code into reusable functions"
-                        })
+                        code_analysis["issues"].append(
+                            {
+                                "type": "high_duplication",
+                                "severity": "high",
+                                "ratio": duplication["duplication_ratio"],
+                                "recommendation": (
+                                    "Consider refactoring duplicated code into "
+                                    "functions"
+                                ),
+                            }
+                        )
 
                 result["code_analysis"] = code_analysis
 
@@ -365,9 +389,7 @@ async def td_explore_project(
             dig_count = len(result["architecture"]["dig_files"])
 
             complexity_score = (
-                (total_files * 0.1) +
-                (sql_count * 0.3) +
-                (dig_count * 0.5)
+                (total_files * 0.1) + (sql_count * 0.3) + (dig_count * 0.5)
             )
             result["project"]["complexity_score"] = min(10, complexity_score)
 
@@ -393,14 +415,18 @@ async def td_explore_project(
                         if session.last_attempt.success:
                             successful_sessions += 1
                         elif not session.last_attempt.success:
-                            performance_data["recent_failures"].append({
-                                "workflow": workflow.name,
-                                "session_time": session.session_time,
-                                "status": session.last_attempt.status,
-                            })
+                            performance_data["recent_failures"].append(
+                                {
+                                    "workflow": workflow.name,
+                                    "session_time": session.session_time,
+                                    "status": session.last_attempt.status,
+                                }
+                            )
 
                 if total_sessions > 0:
-                    performance_data["success_rate"] = successful_sessions / total_sessions
+                    performance_data["success_rate"] = (
+                        successful_sessions / total_sessions
+                    )
 
                 result["performance"] = performance_data
 
@@ -408,25 +434,40 @@ async def td_explore_project(
             recommendations = []
 
             if result["project"]["complexity_score"] > 8:
-                recommendations.append({
-                    "priority": "high",
-                    "category": "complexity",
-                    "message": "Project has high complexity. Consider breaking down into smaller modules."
-                })
+                recommendations.append(
+                    {
+                        "priority": "high",
+                        "category": "complexity",
+                        "message": (
+                            "Project has high complexity. Consider breaking down into "
+                            "smaller modules."
+                        ),
+                    }
+                )
 
             if "code_analysis" in result and len(result["code_analysis"]["issues"]) > 5:
-                recommendations.append({
-                    "priority": "medium",
-                    "category": "code_quality",
-                    "message": "Multiple code quality issues detected. Run code review and refactoring."
-                })
+                recommendations.append(
+                    {
+                        "priority": "medium",
+                        "category": "code_quality",
+                        "message": (
+                            "Multiple code quality issues detected. Run code review "
+                            "and refactoring."
+                        ),
+                    }
+                )
 
             if "performance" in result and result["performance"]["success_rate"] < 0.8:
-                recommendations.append({
-                    "priority": "high",
-                    "category": "reliability",
-                    "message": "Low success rate detected. Investigate recent failures and add error handling."
-                })
+                recommendations.append(
+                    {
+                        "priority": "high",
+                        "category": "reliability",
+                        "message": (
+                            "Low success rate detected. Investigate recent failures "
+                            "and add error handling."
+                        ),
+                    }
+                )
 
             result["recommendations"] = recommendations
 

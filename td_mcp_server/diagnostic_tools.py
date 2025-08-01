@@ -85,12 +85,14 @@ def _analyze_failure_patterns(sessions: list[dict]) -> list[dict]:
     patterns = []
     for error_type, sessions_list in error_patterns.items():
         if sessions_list:
-            patterns.append({
-                "type": error_type,
-                "count": len(sessions_list),
-                "recent_examples": sessions_list[:3],
-                "percentage": len(sessions_list) / len(sessions) * 100
-            })
+            patterns.append(
+                {
+                    "type": error_type,
+                    "count": len(sessions_list),
+                    "recent_examples": sessions_list[:3],
+                    "percentage": len(sessions_list) / len(sessions) * 100,
+                }
+            )
 
     return sorted(patterns, key=lambda x: x["count"], reverse=True)
 
@@ -114,7 +116,8 @@ def _calculate_health_score(
 
     # Failure pattern impact (max -3 points)
     critical_failures = sum(
-        p["count"] for p in failure_patterns
+        p["count"]
+        for p in failure_patterns
         if p["type"] in ["resource_timeout", "runtime_error"]
     )
     if critical_failures > 10:
@@ -145,56 +148,91 @@ def _generate_recommendations(
 
     # Health score based recommendations
     if health_score < 5.0:
-        recommendations.append({
-            "priority": "critical",
-            "category": "overall_health",
-            "action": "Immediate attention required",
-            "details": "Workflow is experiencing critical issues. Consider pausing scheduled runs until resolved."
-        })
+        recommendations.append(
+            {
+                "priority": "critical",
+                "category": "overall_health",
+                "action": "Immediate attention required",
+                "details": (
+                    "Workflow is experiencing critical issues. "
+                    "Consider pausing scheduled runs until resolved."
+                ),
+            }
+        )
     elif health_score < 7.0:
-        recommendations.append({
-            "priority": "high",
-            "category": "overall_health",
-            "action": "Performance optimization needed",
-            "details": "Workflow reliability is below acceptable levels. Review recent changes and error logs."
-        })
+        recommendations.append(
+            {
+                "priority": "high",
+                "category": "overall_health",
+                "action": "Performance optimization needed",
+                "details": (
+                    "Workflow reliability is below acceptable levels. "
+                    "Review recent changes and error logs."
+                ),
+            }
+        )
 
     # Issue-specific recommendations
     for issue in issues:
         if issue["category"] == "resource_management" and issue["severity"] == "high":
-            recommendations.append({
-                "priority": "high",
-                "category": "resources",
-                "action": "Increase resource allocation",
-                "details": f"Consider increasing memory limits or using more efficient queries. {issue['description']}"
-            })
+            recommendations.append(
+                {
+                    "priority": "high",
+                    "category": "resources",
+                    "action": "Increase resource allocation",
+                    "details": (
+                        f"Consider increasing memory limits or using more "
+                        f"efficient queries. {issue['description']}"
+                    ),
+                }
+            )
 
-        elif issue["category"] == "scheduling" and "overlap" in issue.get("description", ""):
-            recommendations.append({
-                "priority": "medium",
-                "category": "scheduling",
-                "action": "Adjust schedule timing",
-                "details": "Workflow runs are overlapping. Consider increasing interval or optimizing execution time."
-            })
+        elif issue["category"] == "scheduling" and "overlap" in issue.get(
+            "description", ""
+        ):
+            recommendations.append(
+                {
+                    "priority": "medium",
+                    "category": "scheduling",
+                    "action": "Adjust schedule timing",
+                    "details": (
+                        "Workflow runs are overlapping. Consider increasing "
+                        "interval or optimizing execution time."
+                    ),
+                }
+            )
 
         elif issue["category"] == "error_rate":
-            recommendations.append({
-                "priority": "high",
-                "category": "error_handling",
-                "action": "Implement retry logic",
-                "details": "Add error handling and retry mechanisms for transient failures."
-            })
+            recommendations.append(
+                {
+                    "priority": "high",
+                    "category": "error_handling",
+                    "action": "Implement retry logic",
+                    "details": (
+                        "Add error handling and retry mechanisms for "
+                        "transient failures."
+                    ),
+                }
+            )
 
     # Add data quality recommendations if patterns detected
     if workflow_info.get("has_data_dependencies"):
-        recommendations.append({
-            "priority": "medium",
-            "category": "data_quality",
-            "action": "Add data validation",
-            "details": "Consider adding data quality checks before processing to catch issues early."
-        })
+        recommendations.append(
+            {
+                "priority": "medium",
+                "category": "data_quality",
+                "action": "Add data validation",
+                "details": (
+                    "Consider adding data quality checks before processing "
+                    "to catch issues early."
+                ),
+            }
+        )
 
-    return sorted(recommendations, key=lambda x: {"critical": 0, "high": 1, "medium": 2}.get(x["priority"], 3))
+    return sorted(
+        recommendations,
+        key=lambda x: {"critical": 0, "high": 1, "medium": 2}.get(x["priority"], 3),
+    )
 
 
 async def td_diagnose_workflow(
@@ -233,7 +271,7 @@ async def td_diagnose_workflow(
                 if w.id == workflow_identifier:
                     target_workflow = w
                     break
-        
+
         # Try name match
         if not target_workflow:
             workflow_lower = workflow_identifier.lower()
@@ -307,40 +345,52 @@ async def td_diagnose_workflow(
 
         # High failure rate
         if success_rate < 0.8:
-            issues.append({
-                "severity": "high",
-                "category": "error_rate",
-                "description": f"High failure rate: {(1-success_rate)*100:.1f}% of runs failing",
-                "affected_components": ["workflow_execution"],
-            })
+            issues.append(
+                {
+                    "severity": "high",
+                    "category": "error_rate",
+                    "description": (
+                        f"High failure rate: "
+                        f"{(1 - success_rate) * 100:.1f}% of runs failing"
+                    ),
+                    "affected_components": ["workflow_execution"],
+                }
+            )
 
         # Resource timeout patterns
-        timeout_issues = [p for p in failure_patterns if p["type"] == "resource_timeout"]
+        timeout_issues = [
+            p for p in failure_patterns if p["type"] == "resource_timeout"
+        ]
         if timeout_issues and timeout_issues[0]["count"] > 3:
-            issues.append({
-                "severity": "high",
-                "category": "resource_management",
-                "description": "Frequent resource timeouts detected",
-                "recommendation": "Consider increasing memory allocation or optimizing queries",
-                "affected_components": ["resource_allocation"],
-            })
+            issues.append(
+                {
+                    "severity": "high",
+                    "category": "resource_management",
+                    "description": "Frequent resource timeouts detected",
+                    "recommendation": (
+                        "Consider increasing memory allocation or optimizing queries"
+                    ),
+                    "affected_components": ["resource_allocation"],
+                }
+            )
 
         # Performance degradation (would need historical data for proper trend)
         if avg_duration > 3600:  # > 1 hour average
-            issues.append({
-                "severity": "medium",
-                "category": "performance",
-                "description": f"Long average execution time: {avg_duration/60:.1f} minutes",
-                "recommendation": "Review query optimization opportunities",
-                "affected_components": ["query_performance"],
-            })
+            issues.append(
+                {
+                    "severity": "medium",
+                    "category": "performance",
+                    "description": (
+                        f"Long average execution time: {avg_duration / 60:.1f} minutes"
+                    ),
+                    "recommendation": "Review query optimization opportunities",
+                    "affected_components": ["query_performance"],
+                }
+            )
 
         # Calculate health score
         health_score = _calculate_health_score(
-            success_rate,
-            avg_duration,
-            failure_patterns,
-            result["workflow"]
+            success_rate, avg_duration, failure_patterns, result["workflow"]
         )
 
         # Build result
@@ -350,7 +400,9 @@ async def td_diagnose_workflow(
             "total_runs": total_runs,
             "successful_runs": successful_runs,
             "success_rate": round(success_rate, 3),
-            "avg_duration_minutes": round(avg_duration / 60, 1) if avg_duration > 0 else 0,
+            "avg_duration_minutes": round(avg_duration / 60, 1)
+            if avg_duration > 0
+            else 0,
         }
 
         # Add trends (simplified without historical data)
@@ -371,26 +423,32 @@ async def td_diagnose_workflow(
             optimization_opportunities = []
 
             if target_workflow.schedule and avg_duration > 1800:  # > 30 min
-                optimization_opportunities.append({
-                    "type": "scheduling",
-                    "description": "Consider adjusting schedule to avoid peak hours",
-                    "potential_impact": "Reduce resource contention",
-                })
+                optimization_opportunities.append(
+                    {
+                        "type": "scheduling",
+                        "description": (
+                            "Consider adjusting schedule to avoid peak hours"
+                        ),
+                        "potential_impact": "Reduce resource contention",
+                    }
+                )
 
             if len(failure_patterns) > 0:
-                optimization_opportunities.append({
-                    "type": "error_handling",
-                    "description": "Implement retry logic for transient failures",
-                    "potential_impact": f"Could recover {failure_patterns[0]['count']} failed runs",
-                })
+                optimization_opportunities.append(
+                    {
+                        "type": "error_handling",
+                        "description": "Implement retry logic for transient failures",
+                        "potential_impact": (
+                            f"Could recover {failure_patterns[0]['count']} failed runs"
+                        ),
+                    }
+                )
 
             result["optimization_opportunities"] = optimization_opportunities
 
         # Generate recommendations
         recommendations = _generate_recommendations(
-            health_score,
-            issues,
-            result["workflow"]
+            health_score, issues, result["workflow"]
         )
         result["recommendations"] = recommendations
 
@@ -422,7 +480,9 @@ async def td_trace_data_lineage(
         return _format_error_response("Table or project identifier cannot be empty")
 
     if direction not in ["upstream", "downstream", "both"]:
-        return _format_error_response("Direction must be 'upstream', 'downstream', or 'both'")
+        return _format_error_response(
+            "Direction must be 'upstream', 'downstream', or 'both'"
+        )
 
     client = _create_client(include_workflow=True)
     if isinstance(client, dict):
@@ -443,32 +503,36 @@ async def td_trace_data_lineage(
 
         # Determine if input is table or project
         is_table = "." in table_or_project
-        
+
         if is_table:
             # Parse database.table format
             parts = table_or_project.split(".", 1)
             if len(parts) != 2:
                 return _format_error_response("Table must be in format: database.table")
-            
+
             database_name, table_name = parts
-            
+
             # Verify table exists
             try:
                 tables = client.get_tables(database_name, all_results=True)
                 table_exists = any(t.name == table_name for t in tables)
                 if not table_exists:
-                    return _format_error_response(f"Table '{table_or_project}' not found")
+                    return _format_error_response(
+                        f"Table '{table_or_project}' not found"
+                    )
             except Exception:
                 return _format_error_response(f"Database '{database_name}' not found")
 
             # Add root node
-            result["lineage"]["nodes"].append({
-                "id": table_or_project,
-                "type": "table",
-                "name": table_name,
-                "database": database_name,
-                "level": 0,
-            })
+            result["lineage"]["nodes"].append(
+                {
+                    "id": table_or_project,
+                    "type": "table",
+                    "name": table_name,
+                    "database": database_name,
+                    "level": 0,
+                }
+            )
 
             # Note: Full lineage tracing would require parsing SQL queries
             # from all workflows, which is beyond current scope
@@ -476,20 +540,22 @@ async def td_trace_data_lineage(
                 "Table lineage tracing requires SQL parsing from all workflows. "
                 "This is a simplified view based on available metadata."
             )
-            
+
             # Search for workflows that might reference this table
             workflows = client.get_workflows(count=500, all_results=True)
             referencing_workflows = []
-            
+
             for workflow in workflows:
                 # Simple heuristic: workflow name contains table name
                 if table_name.lower() in workflow.name.lower():
-                    referencing_workflows.append({
-                        "workflow_id": workflow.id,
-                        "workflow_name": workflow.name,
-                        "project": workflow.project.name,
-                        "scheduled": workflow.schedule is not None,
-                    })
+                    referencing_workflows.append(
+                        {
+                            "workflow_id": workflow.id,
+                            "workflow_name": workflow.name,
+                            "project": workflow.project.name,
+                            "scheduled": workflow.schedule is not None,
+                        }
+                    )
 
             result["summary"]["referencing_workflows"] = referencing_workflows[:10]
             result["summary"]["total_references"] = len(referencing_workflows)
@@ -515,12 +581,14 @@ async def td_trace_data_lineage(
                 return _format_error_response(f"Project '{table_or_project}' not found")
 
             # Add root node
-            result["lineage"]["nodes"].append({
-                "id": project_id,
-                "type": "project",
-                "name": project.name,
-                "level": 0,
-            })
+            result["lineage"]["nodes"].append(
+                {
+                    "id": project_id,
+                    "type": "project",
+                    "name": project.name,
+                    "level": 0,
+                }
+            )
 
             # Get workflows for this project
             workflows = client.get_workflows(count=500, all_results=True)
@@ -529,20 +597,24 @@ async def td_trace_data_lineage(
             # Create workflow nodes
             for workflow in project_workflows:
                 node_id = f"workflow_{workflow.id}"
-                result["lineage"]["nodes"].append({
-                    "id": node_id,
-                    "type": "workflow",
-                    "name": workflow.name,
-                    "scheduled": workflow.schedule is not None,
-                    "level": 1,
-                })
+                result["lineage"]["nodes"].append(
+                    {
+                        "id": node_id,
+                        "type": "workflow",
+                        "name": workflow.name,
+                        "scheduled": workflow.schedule is not None,
+                        "level": 1,
+                    }
+                )
 
                 # Add edge from project to workflow
-                result["lineage"]["edges"].append({
-                    "from": project_id,
-                    "to": node_id,
-                    "type": "contains",
-                })
+                result["lineage"]["edges"].append(
+                    {
+                        "from": project_id,
+                        "to": node_id,
+                        "type": "contains",
+                    }
+                )
 
             result["summary"]["workflow_count"] = len(project_workflows)
             result["summary"]["scheduled_workflows"] = sum(
@@ -551,8 +623,8 @@ async def td_trace_data_lineage(
 
             # Note about limitations
             result["summary"]["note"] = (
-                "Full data lineage requires parsing SQL queries and workflow definitions. "
-                "This view shows project and workflow relationships."
+                "Full data lineage requires parsing SQL queries and workflow "
+                "definitions. This view shows project and workflow relationships."
             )
 
         return result

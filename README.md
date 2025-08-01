@@ -216,7 +216,7 @@ This MCP server provides a comprehensive set of tools for interacting with Treas
      td_smart_search query="customer clustering"
 
      # Exact search for projects only
-     td_smart_search query="poc_oreheaven" search_scope=projects search_mode=exact
+     td_smart_search query="my_project" search_scope=projects search_mode=exact
 
      # Semantic search for workflows
      td_smart_search query="recommendation engine" search_scope=workflows search_mode=semantic
@@ -239,7 +239,7 @@ This MCP server provides a comprehensive set of tools for interacting with Treas
      td_find_project search_term=cluster
 
      # Find exact project name
-     td_find_project search_term="clustering_heven_customer" exact_match=True
+     td_find_project search_term="customer_analytics" exact_match=True
      ```
 
 12. **td_find_workflow**
@@ -258,7 +258,7 @@ This MCP server provides a comprehensive set of tools for interacting with Treas
      td_find_workflow search_term=scoring
 
      # Find workflows in specific project
-     td_find_workflow search_term=daily project_name=poc_oreheaven
+     td_find_workflow search_term=daily project_name=my_project
 
      # Find failed workflows with exact name
      td_find_workflow search_term="ore_heaven_scoring" exact_match=True status_filter=error
@@ -274,7 +274,7 @@ This MCP server provides a comprehensive set of tools for interacting with Treas
    - **Example**:
      ```
      # Get project details by name
-     td_get_project_by_name project_name="clustering_heven_customer"
+     td_get_project_by_name project_name="customer_analytics"
      ```
 
 ### URL Analysis Tools
@@ -323,10 +323,10 @@ This MCP server provides a comprehensive set of tools for interacting with Treas
    - **Examples**:
      ```
      # Get detailed project analysis
-     td_explore_project identifier="poc_oreheaven"
+     td_explore_project identifier="my_project"
 
      # Deep analysis focusing on performance
-     td_explore_project identifier="clustering_heven" analysis_depth=deep focus_areas=["performance", "errors"]
+     td_explore_project identifier="analytics_workflow" analysis_depth=deep focus_areas=["performance", "errors"]
 
      # Quick overview
      td_explore_project identifier=1664373 analysis_depth=overview
@@ -371,7 +371,7 @@ This MCP server provides a comprehensive set of tools for interacting with Treas
      td_trace_data_lineage table_or_project="analytics.recommendations" direction=upstream
 
      # Trace project data flow
-     td_trace_data_lineage table_or_project="poc_oreheaven" max_depth=5
+     td_trace_data_lineage table_or_project="my_project" max_depth=5
      ```
 
 ## Testing
