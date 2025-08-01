@@ -316,3 +316,4 @@ uv run ruff format td_mcp_server tests
 # Run pre-commit hooks on all files
 uv run pre-commit run --all-files
 ```
+# GitHub Actions formatting fix
