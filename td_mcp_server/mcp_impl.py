@@ -13,6 +13,7 @@ from typing import Any
 import requests
 from mcp.server.fastmcp import FastMCP
 
+from . import search_tools, url_tools
 from .api import TreasureDataClient
 
 # Constants
@@ -147,13 +148,10 @@ async def td_list_databases(
     offset: int = 0,
     all_results: bool = False,
 ) -> dict[str, Any]:
-    """Get databases in your Treasure Data account with pagination support.
+    """List Treasure Data databases.
 
-    Args:
-        verbose: If True, return full details; if False, return only names (default)
-        limit: Maximum number of databases to retrieve (defaults to 30)
-        offset: Index to start retrieving from (defaults to 0)
-        all_results: If True, retrieves all databases ignoring limit and offset
+    Returns database names by default. Set verbose=True for full details.
+    Supports pagination via limit/offset or all_results=True for complete list.
     """
     client = _create_client()
     if isinstance(client, dict):
@@ -180,10 +178,9 @@ async def td_list_databases(
 
 @mcp.tool()
 async def td_get_database(database_name: str) -> dict[str, Any]:
-    """Get information about a specific database.
+    """Get detailed information about a specific database.
 
-    Args:
-        database_name: The name of the database to retrieve information for
+    Returns database details including creation time, table count, and permissions.
     """
     # Input validation
     if not database_name or not database_name.strip():
@@ -217,14 +214,10 @@ async def td_list_tables(
     offset: int = 0,
     all_results: bool = False,
 ) -> dict[str, Any]:
-    """Get tables in a specific Treasure Data database with pagination support.
+    """List tables in a Treasure Data database.
 
-    Args:
-        database_name: The name of the database to retrieve tables from
-        verbose: If True, return full details; if False, return only names (default)
-        limit: Maximum number of tables to retrieve (defaults to 30)
-        offset: Index to start retrieving from (defaults to 0)
-        all_results: If True, retrieves all tables ignoring limit and offset
+    Returns table names by default. Set verbose=True for full details including schema.
+    Supports pagination via limit/offset or all_results=True for complete list.
     """
     # Input validation
     if not database_name or not database_name.strip():
@@ -276,18 +269,10 @@ async def td_list_projects(
     all_results: bool = False,
     include_system: bool = False,
 ) -> dict[str, Any]:
-    """Get workflow projects in your Treasure Data account with pagination support.
+    """List workflow projects containing Digdag workflows and SQL queries.
 
-    Workflow projects in Treasure Data are containers for data workflows that include
-    SQL queries and Digdag (.dig) files. These projects define data processing pipelines
-    and scheduled tasks that execute on the Treasure Data platform.
-
-    Args:
-        verbose: If True, return full details; if False, return only names (default)
-        limit: Maximum number of projects to retrieve (defaults to 30)
-        offset: Index to start retrieving from (defaults to 0)
-        all_results: If True, retrieves all projects ignoring limit and offset
-        include_system: If True, include system-generated projects (with "sys" metadata)
+    Returns project names and IDs by default. Set verbose=True for full details.
+    System projects excluded by default, use include_system=True to show all.
     """
     client = _create_client(include_workflow=True)
     if isinstance(client, dict):
@@ -324,18 +309,10 @@ async def td_list_projects(
 
 @mcp.tool()
 async def td_get_project(project_id: str) -> dict[str, Any]:
-    """Get detailed information about a specific workflow project.
+    """Get detailed information about a workflow project.
 
-    Retrieves comprehensive details about a Treasure Data workflow project.
-    These projects contain SQL queries and Digdag (.dig) workflow definition files
-    that orchestrate data processing tasks. Workflows are used for scheduled jobs,
-    ETL processes, and data transformation pipelines within Treasure Data.
-    Note: This method provides basic project metadata. For detailed project contents
-    including SQL queries and workflow definitions, use td_download_project_archive
-    followed by td_list_project_files and td_read_project_file to examine the files.
-
-    Args:
-        project_id: The ID of the workflow project to retrieve information for
+    Returns project metadata including creation time and revision.
+    Use numeric project ID (e.g., "123456") not project name.
     """
     # Input validation - prevent path traversal
     if not _validate_project_id(project_id):
@@ -565,26 +542,17 @@ async def td_read_project_file(archive_path: str, file_path: str) -> dict[str, A
 @mcp.tool()
 async def td_list_workflows(
     verbose: bool = False,
-    count: int = 100,
+    count: int = 50,
     include_system: bool = False,
     status_filter: str | None = None,
+    search: str | None = None,
 ) -> dict[str, Any]:
-    """Get workflows across all projects in your Treasure Data account.
+    """List workflows across all projects.
 
-    Workflows are the executable units in Treasure Data that contain tasks defined
-    in Digdag files (.dig). Each workflow belongs to a project and represents a
-    data processing pipeline that can be scheduled or run manually. This tool
-    retrieves workflows from all projects, showing their execution status and
-    recent session history.
-
-    Args:
-        verbose: If True, return full details including sessions; if False,
-            return summary (default)
-        count: Maximum number of workflows to retrieve (defaults to 100, max 12000)
-        include_system: If True, include system-generated workflows (with "sys"
-            metadata)
-        status_filter: Filter workflows by their last session status ('success',
-            'error', 'running', None for all)
+    Returns workflow summaries by default. Set verbose=True for session details.
+    Use count parameter carefully - large values may hit token limits.
+    Filter by status: 'success', 'error', 'running', or None for all.
+    Optional search parameter filters by workflow or project name.
     """
     client = _create_client(include_workflow=True)
     if isinstance(client, dict):
@@ -612,6 +580,17 @@ async def td_list_workflows(
                     last_status = workflow.latest_sessions[0].last_attempt.status
                     if last_status == status_filter:
                         filtered_workflows.append(workflow)
+            workflows = filtered_workflows
+
+        # Filter by search term if requested
+        if search:
+            search_lower = search.lower()
+            filtered_workflows = []
+            for workflow in workflows:
+                workflow_name = workflow.name.lower()
+                project_name = workflow.project.name.lower()
+                if search_lower in workflow_name or search_lower in project_name:
+                    filtered_workflows.append(workflow)
             workflows = filtered_workflows
 
         if verbose:
@@ -666,6 +645,12 @@ async def td_list_workflows(
             f"Unexpected error while retrieving workflows: {str(e)}"
         )
 
+
+# Register search and URL tools
+search_tools.register_mcp_tools(
+    mcp, _create_client, _format_error_response, _validate_project_id
+)
+url_tools.register_url_tools(mcp, _create_client, _format_error_response)
 
 if __name__ == "__main__":
     # Initialize and run the server

@@ -309,7 +309,8 @@ class TreasureDataClient:
         """
         # The projects API uses 'count' parameter, not limit/offset
         # Request more data if offset is specified
-        count = 100 if all_results else offset + limit
+        # Increased to 200 to cover all projects (currently ~135)
+        count = 200 if all_results else min(offset + limit, 200)
 
         params = {"count": count}
         response = self._make_request(
