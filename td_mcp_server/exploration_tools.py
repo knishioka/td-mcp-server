@@ -8,15 +8,16 @@ import re
 import tarfile
 import tempfile
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 # These will be injected from mcp_impl.py to avoid circular import
-mcp = None
-_create_client = None
-_format_error_response = None
-_validate_project_id = None
-_safe_extract_member = None
+mcp: Any | None = None
+_create_client: Callable[..., Any] | None = None
+_format_error_response: Callable[[str], dict[str, Any]] | None = None
+_validate_project_id: Callable[[str], bool] | None = None
+_safe_extract_member: Callable[..., bool] | None = None
 
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 

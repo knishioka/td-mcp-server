@@ -3,13 +3,14 @@ Search tools for Treasure Data MCP Server.
 Provides efficient name-based search for projects and workflows.
 """
 
+from collections.abc import Callable
 from typing import Any
 
 # These will be injected from mcp_impl.py to avoid circular import
-mcp = None
-_create_client = None
-_format_error_response = None
-_validate_project_id = None
+mcp: Any | None = None
+_create_client: Callable[..., Any] | None = None
+_format_error_response: Callable[[str], dict[str, Any]] | None = None
+_validate_project_id: Callable[[str], bool] | None = None
 
 
 def register_mcp_tools(
@@ -333,7 +334,7 @@ async def td_smart_search(
     if isinstance(client, dict):
         return client
 
-    results = {
+    results: dict[str, Any] = {
         "query": query,
         "search_scope": search_scope,
         "search_mode": search_mode,

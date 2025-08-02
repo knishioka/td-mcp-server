@@ -55,3 +55,12 @@ line-ending = "auto"
 
 [tool.ruff.lint.isort]
 known-first-party = ["td_mcp_server"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+strict_optional = true
+warn_return_any = true
+warn_unused_ignores = true
+check_untyped_defs = true
+disable_error_code = ["misc"]

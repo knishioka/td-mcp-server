@@ -5,13 +5,14 @@ Provides workflow health checks and troubleshooting capabilities.
 
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import Any
 
 # These will be injected from mcp_impl.py to avoid circular import
-mcp = None
-_create_client = None
-_format_error_response = None
+mcp: Any | None = None
+_create_client: Callable[..., Any] | None = None
+_format_error_response: Callable[[str], dict[str, Any]] | None = None
 
 
 def register_diagnostic_tools(mcp_instance, create_client_func, format_error_func):
@@ -287,7 +288,7 @@ async def td_diagnose_workflow(
         start_time = _calculate_time_window(time_window)
 
         # Initialize diagnosis result
-        result = {
+        result: dict[str, Any] = {
             "workflow": {
                 "id": target_workflow.id,
                 "name": target_workflow.name,
@@ -305,7 +306,7 @@ async def td_diagnose_workflow(
 
         # Analyze session history
         sessions = []
-        total_duration = 0
+        total_duration = 0.0
         successful_runs = 0
 
         for session in target_workflow.latest_sessions:

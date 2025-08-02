@@ -4,12 +4,16 @@ Helps users investigate from console URLs.
 """
 
 import re
-from typing import Any
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    pass
 
 # These will be injected from mcp_impl.py to avoid circular import
-mcp = None
-_create_client = None
-_format_error_response = None
+mcp: Any = None
+_create_client: Callable[..., Any] = None  # type: ignore[assignment]
+_format_error_response: Callable[[str], dict[str, Any]] = None  # type: ignore[assignment]
 
 
 def register_url_tools(mcp_instance, create_client_func, format_error_func):
@@ -112,7 +116,7 @@ async def td_get_workflow(workflow_id: str) -> dict[str, Any]:
         for workflow in workflows:
             if workflow.id == workflow_id:
                 # Found the workflow
-                result = {
+                result: dict[str, Any] = {
                     "type": "workflow",
                     "workflow": {
                         "id": workflow.id,
