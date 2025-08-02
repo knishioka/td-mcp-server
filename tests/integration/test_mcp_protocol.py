@@ -26,19 +26,35 @@ class TestMCPProtocolCompliance:
         tools = await mcp.list_tools()
 
         # Verify we have the expected number of tools
-        assert len(tools) == 9, f"Expected 9 tools, got {len(tools)}"
+        assert len(tools) == 18, f"Expected 18 tools, got {len(tools)}"
 
         # Verify each tool has required MCP protocol fields
         expected_tools = [
+            # Core database tools
             "td_list_databases",
             "td_get_database",
             "td_list_tables",
+            # Project management tools
             "td_list_projects",
             "td_get_project",
             "td_download_project_archive",
             "td_list_project_files",
             "td_read_project_file",
+            # Workflow tools
             "td_list_workflows",
+            # Search tools
+            "td_find_project",
+            "td_find_workflow",
+            "td_get_project_by_name",
+            "td_smart_search",
+            # URL tools
+            "td_analyze_url",
+            "td_get_workflow",
+            # Exploration tools
+            "td_explore_project",
+            # Diagnostic tools
+            "td_diagnose_workflow",
+            "td_trace_data_lineage",
         ]
 
         tool_names = [tool.name for tool in tools]
@@ -292,6 +308,11 @@ class TestMCPProtocolCompliance:
         # This test verifies that FastMCP can introspect our tools properly
         import inspect
 
+        from td_mcp_server.diagnostic_tools import (
+            td_diagnose_workflow,
+            td_trace_data_lineage,
+        )
+        from td_mcp_server.exploration_tools import td_explore_project
         from td_mcp_server.mcp_impl import (
             td_download_project_archive,
             td_get_database,
@@ -303,17 +324,40 @@ class TestMCPProtocolCompliance:
             td_list_workflows,
             td_read_project_file,
         )
+        from td_mcp_server.search_tools import (
+            td_find_project,
+            td_find_workflow,
+            td_get_project_by_name,
+            td_smart_search,
+        )
+        from td_mcp_server.url_tools import td_analyze_url, td_get_workflow
 
         tools = [
+            # Core database tools
             td_list_databases,
             td_get_database,
             td_list_tables,
+            # Project management tools
             td_list_projects,
             td_get_project,
             td_download_project_archive,
             td_list_project_files,
             td_read_project_file,
+            # Workflow tools
             td_list_workflows,
+            # Search tools
+            td_find_project,
+            td_find_workflow,
+            td_get_project_by_name,
+            td_smart_search,
+            # URL tools
+            td_analyze_url,
+            td_get_workflow,
+            # Exploration tools
+            td_explore_project,
+            # Diagnostic tools
+            td_diagnose_workflow,
+            td_trace_data_lineage,
         ]
 
         for tool_func in tools:
