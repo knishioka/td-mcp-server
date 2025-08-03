@@ -26,7 +26,7 @@ class TestMCPProtocolCompliance:
         tools = await mcp.list_tools()
 
         # Verify we have the expected number of tools
-        assert len(tools) == 18, f"Expected 18 tools, got {len(tools)}"
+        assert len(tools) == 23, f"Expected 23 tools, got {len(tools)}"
 
         # Verify each tool has required MCP protocol fields
         expected_tools = [
@@ -55,6 +55,12 @@ class TestMCPProtocolCompliance:
             # Diagnostic tools
             "td_diagnose_workflow",
             "td_trace_data_lineage",
+            # Workflow execution tools
+            "td_get_session",
+            "td_list_sessions",
+            "td_get_attempt",
+            "td_get_attempt_tasks",
+            "td_analyze_execution",
         ]
 
         tool_names = [tool.name for tool in tools]
