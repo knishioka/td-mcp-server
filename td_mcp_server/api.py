@@ -409,10 +409,65 @@ class TreasureDataClient:
                 raise
             return False
 
+    def get_workflow_by_id(self, workflow_id: str) -> Workflow | None:
+        """
+        Retrieve a specific workflow by its ID.
+
+        This method retrieves a single workflow directly using its ID.
+        This is more efficient than searching through all workflows.
+
+        Args:
+            workflow_id: The ID of the workflow to retrieve
+
+        Returns:
+            A Workflow object if found, None otherwise
+
+        Raises:
+            requests.HTTPError: If the API returns an error response (except 404)
+        """
+        url = f"{self.workflow_base_url}/workflows/{workflow_id}"
+
+        try:
+            response = requests.get(url, headers=self.headers)
+
+            # Return None for 404 (workflow not found)
+            if response.status_code == 404:
+                return None
+
+            # Raise for other error status codes
+            response.raise_for_status()
+
+            # The direct API returns a simpler structure, need to adapt it
+            data = response.json()
+            # Convert to match the console API structure
+            workflow_data = {
+                "id": data["id"],
+                "name": data["name"],
+                "project": {
+                    "id": data["project"]["id"],
+                    "name": data["project"]["name"],
+                    "updatedAt": "1970-01-01T00:00:00Z",  # Not provided by direct API
+                },
+                "revision": data["revision"],
+                "timezone": data["timezone"],
+                "config": data.get("config", {}),
+                "schedule": data.get("schedule"),
+                "latestSessions": [],  # Direct API doesn't include sessions
+            }
+            return Workflow(**workflow_data)
+        except requests.RequestException as e:
+            # Re-raise if it's not a 404 error
+            if not isinstance(e, requests.HTTPError) or (
+                hasattr(e, "response") and e.response.status_code != 404
+            ):
+                raise
+            return None
+
     def get_workflows(
         self,
         count: int = 100,
         all_results: bool = False,
+        page: int = 1,
     ) -> list[Workflow]:
         """
         Retrieve a list of workflows across all projects.
@@ -423,8 +478,9 @@ class TreasureDataClient:
         multiple sessions (execution instances).
 
         Args:
-            count: Maximum number of workflows to retrieve (defaults to 100)
-            all_results: If True, retrieves all workflows up to count limit
+            count: Maximum number of workflows to retrieve per page (defaults to 100)
+            all_results: If True, retrieves all workflows across multiple pages
+            page: Page number for pagination (defaults to 1)
 
         Returns:
             A list of Workflow objects
@@ -432,29 +488,66 @@ class TreasureDataClient:
         Raises:
             requests.HTTPError: If the API returns an error response
         """
-        # Use the console workflows endpoint as discovered
-        params = {
-            "count": count,
-            "order": "asc",
-            "sessions": 5,  # Include last 5 sessions for each workflow
-            "output": "simple",
-            "project_type": "user",
-        }
-
-        # Build console URL using the workflow endpoint
-        # The console API is available at the same endpoint as the workflow API
-        response = requests.get(
-            f"{self.workflow_base_url}/console/workflows",
-            headers=self.headers,
-            params=params,
-        )
-        response.raise_for_status()
-
-        data = response.json()
-        workflows = [Workflow(**workflow) for workflow in data.get("workflows", [])]
-
         if all_results:
-            return workflows
+            # Retrieve all workflows by iterating through pages
+            all_workflows = []
+            current_page = 1
+            per_page = min(count, 1000)  # Use reasonable page size
+
+            while True:
+                params = {
+                    "count": per_page,
+                    "page": current_page,
+                    "order": "asc",
+                    "sessions": 5,  # Include last 5 sessions for each workflow
+                    "output": "simple",
+                    "project_type": "user",
+                }
+
+                response = requests.get(
+                    f"{self.workflow_base_url}/console/workflows",
+                    headers=self.headers,
+                    params=params,
+                )
+                response.raise_for_status()
+
+                data = response.json()
+                workflows = [
+                    Workflow(**workflow) for workflow in data.get("workflows", [])
+                ]
+
+                if not workflows:
+                    # No more workflows on this page
+                    break
+
+                all_workflows.extend(workflows)
+
+                # Check if we've reached the desired count
+                if len(all_workflows) >= count:
+                    return all_workflows[:count]
+
+                current_page += 1
+
+            return all_workflows
         else:
-            # Return up to count workflows
-            return workflows[:count]
+            # Single page request
+            params = {
+                "count": count,
+                "page": page,
+                "order": "asc",
+                "sessions": 5,  # Include last 5 sessions for each workflow
+                "output": "simple",
+                "project_type": "user",
+            }
+
+            response = requests.get(
+                f"{self.workflow_base_url}/console/workflows",
+                headers=self.headers,
+                params=params,
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            workflows = [Workflow(**workflow) for workflow in data.get("workflows", [])]
+
+            return workflows

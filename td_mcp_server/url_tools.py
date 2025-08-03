@@ -110,13 +110,58 @@ async def td_get_workflow(workflow_id: str) -> dict[str, Any]:
         return client
 
     try:
-        # Get workflows and search for the specific ID
+        # First try the direct API endpoint
+        workflow = client.get_workflow_by_id(workflow_id)
+
+        if workflow:
+            # Found the workflow via direct API
+            result: dict[str, Any] = {
+                "type": "workflow",
+                "workflow": {
+                    "id": workflow.id,
+                    "name": workflow.name,
+                    "project": {
+                        "id": workflow.project.id,
+                        "name": workflow.project.name,
+                    },
+                    "timezone": workflow.timezone,
+                    "scheduled": workflow.schedule is not None,
+                },
+            }
+
+            # Add schedule info if available
+            if workflow.schedule:
+                result["workflow"]["schedule"] = workflow.schedule
+
+            # Add latest session info if available
+            # Note: Direct API might not include session info
+            if workflow.latest_sessions:
+                latest_sessions = []
+                for session in workflow.latest_sessions[:5]:  # Last 5 sessions
+                    latest_sessions.append(
+                        {
+                            "session_time": session.session_time,
+                            "status": session.last_attempt.status,
+                            "success": session.last_attempt.success,
+                        }
+                    )
+                result["workflow"]["latest_sessions"] = latest_sessions
+
+            # Construct console URL
+            result[
+                "console_url"
+            ] = f"https://console.treasuredata.com/app/workflows/{workflow_id}/info"
+
+            return result
+
+        # If not found via direct API, fall back to searching through all workflows
+        # This might be needed for workflows accessible via console API only
         workflows = client.get_workflows(count=1000, all_results=True)
 
         for workflow in workflows:
             if workflow.id == workflow_id:
                 # Found the workflow
-                result: dict[str, Any] = {
+                result = {
                     "type": "workflow",
                     "workflow": {
                         "id": workflow.id,

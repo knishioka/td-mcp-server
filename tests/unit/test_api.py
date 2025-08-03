@@ -468,3 +468,135 @@ class TestTreasureDataClient:
         # Verify the result
         assert success is False
         assert not output_path.exists()
+
+    @responses.activate
+    def test_get_workflow_by_id(self):
+        """Test get_workflow_by_id method."""
+        workflow_id = "12345678"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock the API response
+        mock_response = {
+            "id": workflow_id,
+            "name": "test_workflow",
+            "project": {
+                "id": "123456",
+                "name": "test_project",
+            },
+            "revision": "abcdef1234567890abcdef1234567890",
+            "timezone": "UTC",
+            "config": {
+                "+task1": {
+                    "td>": {
+                        "database": "test_db",
+                        "engine": "presto",
+                    }
+                }
+            },
+        }
+
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/workflows/{workflow_id}",
+            json=mock_response,
+            status=200,
+        )
+
+        # Call the method
+        workflow = self.client.get_workflow_by_id(workflow_id)
+
+        # Verify the result
+        assert workflow is not None
+        assert workflow.id == workflow_id
+        assert workflow.name == "test_workflow"
+        assert workflow.project.id == "123456"
+        assert workflow.project.name == "test_project"
+        assert workflow.timezone == "UTC"
+        assert workflow.revision == "abcdef1234567890abcdef1234567890"
+
+    @responses.activate
+    def test_get_workflow_by_id_not_found(self):
+        """Test get_workflow_by_id method when workflow is not found."""
+        workflow_id = "nonexistent"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock the API response with 404 status code
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/workflows/{workflow_id}",
+            json={"message": "Resource does not exist: workflow id=nonexistent"},
+            status=404,
+        )
+
+        # Call the method - should return None for 404
+        workflow = self.client.get_workflow_by_id(workflow_id)
+
+        # Verify the result
+        assert workflow is None
+
+    @responses.activate
+    def test_get_workflows_with_pagination(self):
+        """Test get_workflows method with pagination."""
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock workflow data for page 1
+        mock_workflows_page1 = [
+            {
+                "id": "123",
+                "name": "workflow1",
+                "project": {
+                    "id": "1",
+                    "name": "project1",
+                    "updatedAt": "2023-01-01T00:00:00Z",
+                },
+                "revision": "abc123",
+                "timezone": "UTC",
+                "config": {},
+                "schedule": None,
+                "latestSessions": [],
+            },
+            {
+                "id": "456",
+                "name": "workflow2",
+                "project": {
+                    "id": "2",
+                    "name": "project2",
+                    "updatedAt": "2023-01-02T00:00:00Z",
+                },
+                "revision": "def456",
+                "timezone": "Asia/Tokyo",
+                "config": {},
+                "schedule": {"cron": "0 0 * * *"},
+                "latestSessions": [],
+            },
+        ]
+
+        # Mock the API response for page 1
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/console/workflows",
+            json={"workflows": mock_workflows_page1},
+            status=200,
+            match=[
+                responses.matchers.query_param_matcher(
+                    {
+                        "count": "2",
+                        "page": "1",
+                        "order": "asc",
+                        "sessions": "5",
+                        "output": "simple",
+                        "project_type": "user",
+                    }
+                )
+            ],
+        )
+
+        # Call the method with specific page
+        workflows = self.client.get_workflows(count=2, page=1)
+
+        # Verify the result
+        assert len(workflows) == 2
+        assert workflows[0].id == "123"
+        assert workflows[0].name == "workflow1"
+        assert workflows[1].id == "456"
+        assert workflows[1].name == "workflow2"
