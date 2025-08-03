@@ -15,7 +15,7 @@ For comprehensive Treasure Data documentation and tools:
 
 ## Available MCP Tools
 
-This MCP server provides a comprehensive set of tools for interacting with Treasure Data, organized by functionality:
+This MCP server provides a comprehensive set of tools for interacting with Treasure Data, organized by functionality. Currently offering 23 tools across 6 categories:
 
 ### Database Management
 
@@ -372,6 +372,83 @@ This MCP server provides a comprehensive set of tools for interacting with Treas
 
      # Trace project data flow
      td_trace_data_lineage table_or_project="my_project" max_depth=5
+     ```
+
+### Workflow Execution Management Tools
+
+19. **td_get_session**
+   ```python
+   td_get_session(session_id)
+   ```
+   - Get detailed information about a workflow session
+   - **Parameters**:
+     - `session_id`: The ID of the session to retrieve
+   - **Examples**:
+     ```
+     # Get session details
+     td_get_session session_id=123456789
+     ```
+
+20. **td_list_sessions**
+   ```python
+   td_list_sessions(workflow_id=None, count=20)
+   ```
+   - List recent sessions for workflows
+   - **Parameters**:
+     - `workflow_id`: Optional workflow ID to filter sessions
+     - `count`: Number of recent sessions to retrieve (default 20)
+   - **Examples**:
+     ```
+     # List recent sessions across all workflows
+     td_list_sessions
+
+     # List sessions for a specific workflow
+     td_list_sessions workflow_id=12345678 count=50
+     ```
+
+21. **td_get_attempt**
+   ```python
+   td_get_attempt(attempt_id)
+   ```
+   - Get detailed information about a workflow attempt
+   - **Parameters**:
+     - `attempt_id`: The ID of the attempt to retrieve
+   - **Examples**:
+     ```
+     # Get attempt details
+     td_get_attempt attempt_id=987654321
+     ```
+
+22. **td_get_attempt_tasks**
+   ```python
+   td_get_attempt_tasks(attempt_id)
+   ```
+   - Get all tasks for a workflow attempt
+   - **Parameters**:
+     - `attempt_id`: The ID of the attempt
+   - **Examples**:
+     ```
+     # Get task breakdown for an attempt
+     td_get_attempt_tasks attempt_id=987654321
+     ```
+
+23. **td_analyze_execution**
+   ```python
+   td_analyze_execution(url_or_id)
+   ```
+   - Analyze workflow execution from URL or ID
+   - **Parameters**:
+     - `url_or_id`: Console URL, session ID, or attempt ID
+   - **Examples**:
+     ```
+     # Analyze from console URL
+     td_analyze_execution url_or_id="https://console.us01.treasuredata.com/app/sessions/123456"
+
+     # Analyze from session ID
+     td_analyze_execution url_or_id=123456789
+
+     # Analyze from attempt ID
+     td_analyze_execution url_or_id=987654321
      ```
 
 ## Testing

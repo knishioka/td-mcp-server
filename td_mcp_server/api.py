@@ -83,6 +83,57 @@ class Session(BaseModel):
     last_attempt: SessionAttempt = Field(..., alias="lastAttempt")
 
 
+class Task(BaseModel):
+    """Model representing a task within a workflow attempt."""
+
+    id: str
+    full_name: str = Field(..., alias="fullName")
+    parent_id: str | None = Field(None, alias="parentId")
+    config: dict[str, Any] = {}
+    upstreams: list[str] = []
+    state: str
+    cancel_requested: bool = Field(..., alias="cancelRequested")
+    export_params: dict[str, Any] = Field(default_factory=dict, alias="exportParams")
+    store_params: dict[str, Any] = Field(default_factory=dict, alias="storeParams")
+    state_params: dict[str, Any] = Field(default_factory=dict, alias="stateParams")
+    updated_at: str = Field(..., alias="updatedAt")
+    retry_at: str | None = Field(None, alias="retryAt")
+    started_at: str | None = Field(None, alias="startedAt")
+    error: dict[str, Any] = {}
+    is_group: bool = Field(False, alias="isGroup")
+
+
+class AttemptDetail(BaseModel):
+    """Model representing detailed attempt information."""
+
+    id: str
+    index: int
+    project: dict[str, Any]
+    workflow: dict[str, Any]
+    session_id: str = Field(..., alias="sessionId")
+    session_uuid: str = Field(..., alias="sessionUuid")
+    session_time: str = Field(..., alias="sessionTime")
+    retry_attempt_name: str | None = Field(None, alias="retryAttemptName")
+    done: bool
+    success: bool
+    cancel_requested: bool = Field(..., alias="cancelRequested")
+    params: dict[str, Any] = {}
+    created_at: str = Field(..., alias="createdAt")
+    finished_at: str | None = Field(None, alias="finishedAt")
+    status: str
+
+
+class SessionDetail(BaseModel):
+    """Model representing detailed session information."""
+
+    id: str
+    project: dict[str, Any]
+    workflow: dict[str, Any]
+    session_uuid: str = Field(..., alias="sessionUuid")
+    session_time: str = Field(..., alias="sessionTime")
+    last_attempt: SessionAttempt = Field(..., alias="lastAttempt")
+
+
 class Workflow(BaseModel):
     """
     Model representing a Treasure Data workflow.
@@ -551,3 +602,136 @@ class TreasureDataClient:
             workflows = [Workflow(**workflow) for workflow in data.get("workflows", [])]
 
             return workflows
+
+    def get_session(self, session_id: str) -> SessionDetail | None:
+        """
+        Retrieve detailed information about a specific session.
+
+        Args:
+            session_id: The ID of the session to retrieve
+
+        Returns:
+            A SessionDetail object if found, None otherwise
+
+        Raises:
+            requests.HTTPError: If the API returns an error response (except 404)
+        """
+        url = f"{self.workflow_base_url}/sessions/{session_id}"
+
+        try:
+            response = requests.get(url, headers=self.headers)
+
+            # Return None for 404 (session not found)
+            if response.status_code == 404:
+                return None
+
+            # Raise for other error status codes
+            response.raise_for_status()
+
+            return SessionDetail(**response.json())
+        except requests.RequestException as e:
+            # Re-raise if it's not a 404 error
+            if not isinstance(e, requests.HTTPError) or (
+                hasattr(e, "response") and e.response.status_code != 404
+            ):
+                raise
+            return None
+
+    def get_sessions(
+        self, workflow_id: str | None = None, last: int = 20
+    ) -> list[Session]:
+        """
+        Retrieve a list of sessions, optionally filtered by workflow.
+
+        Args:
+            workflow_id: Optional workflow ID to filter sessions
+            last: Number of recent sessions to retrieve (default 20)
+
+        Returns:
+            A list of Session objects
+
+        Raises:
+            requests.HTTPError: If the API returns an error response
+        """
+        params = {"last": str(last)}
+        if workflow_id:
+            params["workflow"] = workflow_id
+
+        response = self._make_request(
+            "GET", "sessions", base_url=self.workflow_base_url, params=params
+        )
+        return [Session(**session) for session in response.get("sessions", [])]
+
+    def get_session_attempts(self, session_id: str) -> list[AttemptDetail]:
+        """
+        Retrieve all attempts for a specific session.
+
+        Args:
+            session_id: The ID of the session
+
+        Returns:
+            A list of AttemptDetail objects
+
+        Raises:
+            requests.HTTPError: If the API returns an error response
+        """
+        response = self._make_request(
+            "GET",
+            f"sessions/{session_id}/attempts",
+            base_url=self.workflow_base_url,
+        )
+        return [AttemptDetail(**attempt) for attempt in response.get("attempts", [])]
+
+    def get_attempt(self, attempt_id: str) -> AttemptDetail | None:
+        """
+        Retrieve detailed information about a specific attempt.
+
+        Args:
+            attempt_id: The ID of the attempt to retrieve
+
+        Returns:
+            An AttemptDetail object if found, None otherwise
+
+        Raises:
+            requests.HTTPError: If the API returns an error response (except 404)
+        """
+        url = f"{self.workflow_base_url}/attempts/{attempt_id}"
+
+        try:
+            response = requests.get(url, headers=self.headers)
+
+            # Return None for 404 (attempt not found)
+            if response.status_code == 404:
+                return None
+
+            # Raise for other error status codes
+            response.raise_for_status()
+
+            return AttemptDetail(**response.json())
+        except requests.RequestException as e:
+            # Re-raise if it's not a 404 error
+            if not isinstance(e, requests.HTTPError) or (
+                hasattr(e, "response") and e.response.status_code != 404
+            ):
+                raise
+            return None
+
+    def get_attempt_tasks(self, attempt_id: str) -> list[Task]:
+        """
+        Retrieve all tasks for a specific attempt.
+
+        Args:
+            attempt_id: The ID of the attempt
+
+        Returns:
+            A list of Task objects
+
+        Raises:
+            requests.HTTPError: If the API returns an error response
+        """
+        response = self._make_request(
+            "GET",
+            f"attempts/{attempt_id}/tasks",
+            base_url=self.workflow_base_url,
+        )
+        return [Task(**task) for task in response.get("tasks", [])]

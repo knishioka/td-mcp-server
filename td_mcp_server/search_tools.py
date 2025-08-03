@@ -34,17 +34,19 @@ async def td_find_project(
     search_term: str,
     exact_match: bool = False,
 ) -> dict[str, Any]:
-    """Find project by name or partial name match.
+    """Find project by name when you don't know the exact ID.
 
-    Searches through all projects efficiently and returns matching results.
-    Use exact_match=True for exact name matching.
+    Searches all projects and returns matches. Useful when you know project
+    name but need the ID for other operations like downloading archives.
 
-    Args:
-        search_term: Project name or partial name to search for
-        exact_match: If True, only return exact matches (default: False)
+    Common scenarios:
+    - User mentions project name, need to find ID
+    - Looking for projects containing specific keywords
+    - Getting project ID before using td_download_project_archive
+    - Finding multiple projects with similar names
 
-    Returns:
-        Dict with found projects including their IDs and metadata
+    Use exact_match=True for precise name matching, False for fuzzy search.
+    Returns project IDs, names, and metadata for all matches.
     """
     if not search_term or not search_term.strip():
         return _format_error_response("Search term cannot be empty")
@@ -155,18 +157,20 @@ async def td_find_workflow(
     exact_match: bool = False,
     status_filter: str | None = None,
 ) -> dict[str, Any]:
-    """Find workflows by name or partial name match.
+    """Find workflows by name to get IDs and check execution status.
 
-    Searches through workflows efficiently with optional project and status filters.
+    Essential for locating specific workflows when you know the name.
+    Returns workflow IDs, project info, and latest execution status.
 
-    Args:
-        search_term: Workflow name or partial name to search for
-        project_name: Optional project name to filter by
-        exact_match: If True, only return exact matches (default: False)
-        status_filter: Filter by status ('success', 'error', 'running', None)
+    Common scenarios:
+    - User mentions workflow name, need to find details
+    - Looking for failing workflows with specific names
+    - Finding workflows within a specific project
+    - Getting workflow ID before detailed analysis
+    - Checking if a named workflow is running/failed
 
-    Returns:
-        Dict with found workflows including their project info and status
+    Filters: project_name (optional), status ('success', 'error', 'running').
+    Use exact_match=True for precise names, False for partial matches.
     """
     if not search_term or not search_term.strip():
         return _format_error_response("Search term cannot be empty")
@@ -259,16 +263,19 @@ async def td_find_workflow(
 async def td_get_project_by_name(
     project_name: str,
 ) -> dict[str, Any]:
-    """Get project details by exact name match.
+    """Get full project details using exact name instead of ID.
 
-    Finds a project by name and returns its full details.
-    This is more convenient than finding the ID first.
+    Convenient shortcut when you know the exact project name.
+    Combines find + get operations for immediate detailed results.
 
-    Args:
-        project_name: Exact project name
+    Common scenarios:
+    - User provides exact project name, need full details
+    - Quick project metadata lookup by name
+    - Avoiding two-step process (find ID then get details)
+    - Getting revision/timestamps for known project
 
-    Returns:
-        Project details if found, error otherwise
+    Requires exact name match. For fuzzy search use td_find_project.
+    Returns same details as td_get_project but using name lookup.
     """
     if not project_name or not project_name.strip():
         return _format_error_response("Project name cannot be empty")
@@ -305,21 +312,25 @@ async def td_smart_search(
     active_only: bool = True,
     min_relevance: float = 0.7,
 ) -> dict[str, Any]:
-    """Intelligent search across all Treasure Data resources.
+    """Universal search across Treasure Data - best for broad queries.
 
-    Provides unified search with fuzzy matching, relevance scoring,
-    and intelligent result ranking. Replaces multiple specific search tools
-    with one powerful interface.
+    One-stop search for projects, workflows, and tables with smart ranking.
+    Use when unsure what resource type you're looking for or need comprehensive results.
 
-    Args:
-        query: Search term or phrase
-        search_scope: Where to search - "projects", "workflows", "tables", "all"
-        search_mode: Search algorithm - "exact", "fuzzy", "semantic"
-        active_only: Filter to only active/non-deleted resources
-        min_relevance: Minimum relevance score (0-1) for results
+    Common scenarios:
+    - "Find anything related to customer analytics"
+    - Discovering resources around a topic/keyword
+    - Broad exploration of available data assets
+    - Finding resources when type is unknown
+    - Cross-resource impact analysis
 
-    Returns:
-        Ranked search results with relevance scores and resource details
+    Search modes:
+    - exact: Precise string matching only
+    - fuzzy: Partial matches and substrings (default)
+    - semantic: Word-based matching for concepts
+
+    Scopes: "all", "projects", "workflows", "tables"
+    Returns ranked results with relevance scores (0-1).
     """
     if not query or not query.strip():
         return _format_error_response("Search query cannot be empty")

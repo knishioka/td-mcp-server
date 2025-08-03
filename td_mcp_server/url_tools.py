@@ -29,17 +29,23 @@ def register_url_tools(mcp_instance, create_client_func, format_error_func):
 
 
 async def td_analyze_url(url: str) -> dict[str, Any]:
-    """Extract and retrieve information from a Treasure Data console URL.
+    """Analyze any Treasure Data console URL to get resource details.
 
-    Use this when you have a console URL and need to get details about the resource.
-    Automatically detects the resource type (workflow, project, job) from the URL.
+    Smart URL parser that extracts IDs and fetches information. Use when someone
+    shares a console link in Slack, email, or documentation.
 
-    Supported URL formats:
-    - Workflow: https://console.us01.treasuredata.com/app/workflows/12345678/info
-    - Project: https://console.us01.treasuredata.com/app/projects/123456
-    - Job: https://console.us01.treasuredata.com/app/jobs/123456
+    Common scenarios:
+    - Someone shares workflow URL during incident investigation
+    - Documentation contains console links to resources
+    - Error message includes console URL reference
+    - Quick lookup from browser URL copy/paste
 
-    Returns complete information about the resource including project details.
+    Supported formats:
+    - Workflow: https://console.../app/workflows/12345678/info
+    - Project: https://console.../app/projects/123456
+    - Job: https://console.../app/jobs/123456
+
+    Automatically detects type and returns full resource information.
     """
     if not url or not url.strip():
         return _format_error_response("URL cannot be empty")
@@ -85,18 +91,19 @@ async def td_analyze_url(url: str) -> dict[str, Any]:
 
 
 async def td_get_workflow(workflow_id: str) -> dict[str, Any]:
-    """Get workflow details by numeric ID (e.g., from console URL).
+    """Get workflow details using numeric ID - essential for console URLs.
 
-    Use this when you have a workflow ID and need its details including project info.
-    Returns workflow name, project name/ID, schedule, and recent execution history.
+    Direct workflow lookup when you have the ID. Handles large workflow IDs
+    that exceed pagination limits. Returns project info and execution history.
 
-    Example: For URL .../workflows/12345678/info, use workflow_id="12345678"
+    Common scenarios:
+    - Extracting ID from console URL (../workflows/12345678/info)
+    - Looking up workflow from error logs containing ID
+    - Getting project context for a known workflow ID
+    - Checking execution status by workflow ID
 
-    Returns:
-        - Workflow name and configuration
-        - Project name and ID (can be used with td_get_project)
-        - Latest execution status and history
-        - Console URL for easy access
+    Returns workflow name, project details, schedule, and recent runs.
+    Includes console URL for quick browser access.
     """
     if not workflow_id or not workflow_id.strip():
         return _format_error_response("Workflow ID cannot be empty")

@@ -600,3 +600,204 @@ class TestTreasureDataClient:
         assert workflows[0].name == "workflow1"
         assert workflows[1].id == "456"
         assert workflows[1].name == "workflow2"
+
+    @responses.activate
+    def test_get_session(self):
+        """Test get_session method."""
+        session_id = "123456789"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock the API response
+        mock_response = {
+            "id": session_id,
+            "project": {"id": "123456", "name": "test_project"},
+            "workflow": {"name": "test_workflow", "id": "12345678"},
+            "sessionUuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "sessionTime": "2025-08-03T03:00:00+00:00",
+            "lastAttempt": {
+                "id": "987654321",
+                "retryAttemptName": None,
+                "done": True,
+                "success": True,
+                "cancelRequested": False,
+                "params": {},
+                "createdAt": "2025-08-03T03:00:00Z",
+                "finishedAt": "2025-08-03T03:05:30Z",
+                "status": "success",
+            },
+        }
+
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/sessions/{session_id}",
+            json=mock_response,
+            status=200,
+        )
+
+        # Call the method
+        session = self.client.get_session(session_id)
+
+        # Verify the result
+        assert session is not None
+        assert session.id == session_id
+        assert session.project["name"] == "test_project"
+        assert session.workflow["name"] == "test_workflow"
+        assert session.session_time == "2025-08-03T03:00:00+00:00"
+        assert session.last_attempt.success is True
+
+    @responses.activate
+    def test_get_sessions(self):
+        """Test get_sessions method."""
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock the API response
+        mock_response = {
+            "sessions": [
+                {
+                    "id": "123456789",
+                    "project": {"id": "123456", "name": "test_project"},
+                    "workflow": {"name": "test_workflow", "id": "12345678"},
+                    "sessionUuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "sessionTime": "2025-08-03T03:00:00+00:00",
+                    "lastAttempt": {
+                        "id": "987654321",
+                        "retryAttemptName": None,
+                        "done": True,
+                        "success": True,
+                        "cancelRequested": False,
+                        "params": {},
+                        "createdAt": "2025-08-03T03:00:00Z",
+                        "finishedAt": "2025-08-03T03:05:30Z",
+                        "status": "success",
+                    },
+                }
+            ]
+        }
+
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/sessions",
+            json=mock_response,
+            status=200,
+            match=[responses.matchers.query_param_matcher({"last": "20"})],
+        )
+
+        # Call the method
+        sessions = self.client.get_sessions()
+
+        # Verify the result
+        assert len(sessions) == 1
+        assert sessions[0].id == "123456789"
+        assert sessions[0].project["name"] == "test_project"
+
+    @responses.activate
+    def test_get_attempt(self):
+        """Test get_attempt method."""
+        attempt_id = "987654321"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock the API response
+        mock_response = {
+            "id": attempt_id,
+            "index": 1,
+            "project": {"id": "123456", "name": "test_project"},
+            "workflow": {"name": "test_workflow", "id": "12345678"},
+            "sessionId": "123456789",
+            "sessionUuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "sessionTime": "2025-08-03T03:00:00+00:00",
+            "retryAttemptName": None,
+            "done": True,
+            "success": True,
+            "cancelRequested": False,
+            "params": {},
+            "createdAt": "2025-08-03T03:00:00Z",
+            "finishedAt": "2025-08-03T03:05:30Z",
+            "status": "success",
+        }
+
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/attempts/{attempt_id}",
+            json=mock_response,
+            status=200,
+        )
+
+        # Call the method
+        attempt = self.client.get_attempt(attempt_id)
+
+        # Verify the result
+        assert attempt is not None
+        assert attempt.id == attempt_id
+        assert attempt.index == 1
+        assert attempt.session_id == "123456789"
+        assert attempt.success is True
+
+    @responses.activate
+    def test_get_attempt_tasks(self):
+        """Test get_attempt_tasks method."""
+        attempt_id = "987654321"
+        workflow_endpoint = "api-workflow.treasuredata.com"
+
+        # Mock the API response
+        mock_response = {
+            "tasks": [
+                {
+                    "id": "1234567890",
+                    "fullName": "+main_workflow",
+                    "parentId": None,
+                    "config": {},
+                    "upstreams": [],
+                    "state": "success",
+                    "cancelRequested": False,
+                    "exportParams": {},
+                    "storeParams": {},
+                    "stateParams": {},
+                    "updatedAt": "2025-08-03T03:05:30Z",
+                    "retryAt": None,
+                    "startedAt": "2025-08-03T03:00:00Z",
+                    "error": {},
+                    "isGroup": True,
+                },
+                {
+                    "id": "1234567891",
+                    "fullName": "+main_workflow+extract_data",
+                    "parentId": "1234567890",
+                    "config": {
+                        "td>": {
+                            "query": "SELECT * FROM test_table",
+                            "database": "test_db",
+                        }
+                    },
+                    "upstreams": [],
+                    "state": "success",
+                    "cancelRequested": False,
+                    "exportParams": {},
+                    "storeParams": {},
+                    "stateParams": {},
+                    "updatedAt": "2025-08-03T03:02:15Z",
+                    "retryAt": None,
+                    "startedAt": "2025-08-03T03:00:01Z",
+                    "error": {},
+                    "isGroup": False,
+                },
+            ]
+        }
+
+        responses.add(
+            responses.GET,
+            f"https://{workflow_endpoint}/api/attempts/{attempt_id}/tasks",
+            json=mock_response,
+            status=200,
+        )
+
+        # Call the method
+        tasks = self.client.get_attempt_tasks(attempt_id)
+
+        # Verify the result
+        assert len(tasks) == 2
+        assert tasks[0].id == "1234567890"
+        assert tasks[0].full_name == "+main_workflow"
+        assert tasks[0].is_group is True
+        assert tasks[1].id == "1234567891"
+        assert tasks[1].full_name == "+main_workflow+extract_data"
+        assert tasks[1].parent_id == "1234567890"

@@ -203,20 +203,25 @@ async def td_explore_project(
     analysis_depth: str = "detailed",
     focus_areas: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Analyze a TD project comprehensively for documentation or debugging.
+    """Deep-dive into project to understand workflows, SQL, and architecture.
 
-    This tool provides deep insights into project structure, code quality,
-    and potential issues. It's designed to help understand complex projects quickly.
+    Comprehensive project analyzer that downloads and examines all files.
+    Essential for understanding unfamiliar projects or debugging complex issues.
 
-    Args:
-        identifier: Project name, ID, or search term
-        analysis_depth: Level of analysis - "overview", "detailed", or "deep"
-        focus_areas: Specific aspects to analyze - ["code", "data_flow", "performance",
-            "errors"]
+    Common scenarios:
+    - "What does this project do?" - Full project understanding
+    - Onboarding to new codebase - Architecture overview
+    - Debugging workflow failures - Code quality analysis
+    - Documentation generation - Structure and dependencies
+    - Performance optimization - Finding bottlenecks
 
-    Returns:
-        Comprehensive project analysis including structure, patterns, and
-        recommendations
+    Analysis levels:
+    - overview: Quick project summary and structure
+    - detailed: Code patterns and common issues (default)
+    - deep: Full analysis including all SQL/Python code
+
+    Focus areas: ["code", "data_flow", "performance", "errors"]
+    Returns file structure, code patterns, issues, and recommendations.
     """
     if not identifier or not identifier.strip():
         return _format_error_response("Project identifier cannot be empty")

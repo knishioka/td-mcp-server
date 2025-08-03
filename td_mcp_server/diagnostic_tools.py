@@ -241,10 +241,22 @@ async def td_diagnose_workflow(
     time_window: str = "30d",
     diagnostic_level: str = "basic",
 ) -> dict[str, Any]:
-    """Diagnose workflow health and identify issues.
+    """Health check for workflows - find why they're failing or slow.
 
-    Provides comprehensive health analysis including success rates, performance trends,
-    and actionable recommendations for improving workflow reliability.
+    Automated troubleshooting that analyzes execution history to identify
+    patterns, calculate health scores, and provide fix recommendations.
+
+    Common scenarios:
+    - Workflow suddenly failing - Find root cause
+    - Performance degradation - Identify slow tasks
+    - Reliability issues - Pattern analysis
+    - Pre-deployment check - Ensure workflow health
+    - Incident response - Quick failure diagnosis
+
+    Time windows: "30d", "7d", "24h" for trend analysis
+    Levels: "basic" (quick stats), "comprehensive" (full analysis)
+
+    Returns health score (0-10), failure patterns, and prioritized fixes.
 
     Args:
         workflow_identifier: Workflow name, ID, or partial match
@@ -464,10 +476,24 @@ async def td_trace_data_lineage(
     direction: str = "both",
     max_depth: int = 3,
 ) -> dict[str, Any]:
-    """Trace data dependencies and lineage for tables or projects.
+    """Map data flow to see what feeds into or depends on tables/projects.
 
-    Maps data flow to understand dependencies, identify impact of changes,
-    and troubleshoot data quality issues.
+    Critical for understanding data dependencies and impact analysis.
+    Traces through SQL queries to build dependency graph.
+
+    Common scenarios:
+    - "What happens if I change this table?" - Impact analysis
+    - "Where does this data come from?" - Source tracing
+    - Data quality issues - Track upstream problems
+    - Migration planning - Understand dependencies
+    - Documentation - Data flow diagrams
+
+    Directions:
+    - upstream: What tables/projects feed INTO this
+    - downstream: What tables/projects CONSUME this
+    - both: Complete dependency graph
+
+    Returns visual-ready dependency tree with table/project relationships.
 
     Args:
         table_or_project: Table name (format: "database.table") or project name/ID

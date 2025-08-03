@@ -13,7 +13,13 @@ from typing import Any
 import requests
 from mcp.server.fastmcp import FastMCP
 
-from . import diagnostic_tools, exploration_tools, search_tools, url_tools
+from . import (
+    diagnostic_tools,
+    execution_tools,
+    exploration_tools,
+    search_tools,
+    url_tools,
+)
 from .api import TreasureDataClient
 
 # Constants
@@ -148,10 +154,17 @@ async def td_list_databases(
     offset: int = 0,
     all_results: bool = False,
 ) -> dict[str, Any]:
-    """List Treasure Data databases.
+    """List available databases to find data sources and check access.
 
-    Returns database names by default. Set verbose=True for full details.
-    Supports pagination via limit/offset or all_results=True for complete list.
+    Shows all databases you can access. Returns just names for quick overview,
+    or set verbose=True for details like table count and permissions.
+
+    Common scenarios:
+    - Discover what databases are available in your account
+    - Check permissions on specific databases
+    - Get database list for documentation or auditing
+
+    Use pagination (limit/offset) for large lists or all_results=True for everything.
     """
     client = _create_client()
     if isinstance(client, dict):
@@ -178,9 +191,18 @@ async def td_list_databases(
 
 @mcp.tool()
 async def td_get_database(database_name: str) -> dict[str, Any]:
-    """Get detailed information about a specific database.
+    """Get specific database details like table count, permissions, and metadata.
 
-    Returns database details including creation time, table count, and permissions.
+    Shows detailed information about a named database. Use when you need to check
+    database properties, understand access permissions, or get table statistics.
+
+    Common scenarios:
+    - Verify database exists before running queries
+    - Check permission level (administrator, read-only, etc.)
+    - Get table count and creation/update timestamps
+    - Audit database properties for documentation
+
+    Returns creation time, table count, permissions, and protection status.
     """
     # Input validation
     if not database_name or not database_name.strip():
@@ -214,10 +236,19 @@ async def td_list_tables(
     offset: int = 0,
     all_results: bool = False,
 ) -> dict[str, Any]:
-    """List tables in a Treasure Data database.
+    """List tables in a database to explore data structure and find datasets.
 
-    Returns table names by default. Set verbose=True for full details including schema.
-    Supports pagination via limit/offset or all_results=True for complete list.
+    Shows all tables within a specific database. Returns table names for quick
+    scanning, or set verbose=True for schemas, sizes, and record counts.
+
+    Common scenarios:
+    - Explore available data in a database
+    - Find specific tables by scanning names
+    - Check table schemas before writing queries
+    - Audit table sizes and record counts
+    - Verify table exists before querying
+
+    Supports pagination (limit/offset) or all_results=True for complete list.
     """
     # Input validation
     if not database_name or not database_name.strip():
@@ -269,10 +300,19 @@ async def td_list_projects(
     all_results: bool = False,
     include_system: bool = False,
 ) -> dict[str, Any]:
-    """List workflow projects containing Digdag workflows and SQL queries.
+    """List workflow projects to find data pipelines and scheduled jobs.
 
-    Returns project names and IDs by default. Set verbose=True for full details.
-    System projects excluded by default, use include_system=True to show all.
+    Shows all workflow projects containing Digdag workflows, SQL queries, and
+    Python scripts. Returns names/IDs for navigation or verbose=True for details.
+
+    Common scenarios:
+    - Discover available data processing workflows
+    - Find specific project by browsing names
+    - Get project IDs for detailed exploration
+    - Audit workflow projects in the account
+    - List user projects (exclude system with include_system=False)
+
+    Projects contain .dig files defining scheduled data pipelines.
     """
     client = _create_client(include_workflow=True)
     if isinstance(client, dict):
@@ -309,10 +349,19 @@ async def td_list_projects(
 
 @mcp.tool()
 async def td_get_project(project_id: str) -> dict[str, Any]:
-    """Get detailed information about a workflow project.
+    """Get workflow project details by ID to check metadata and revision.
 
-    Returns project metadata including creation time and revision.
-    Use numeric project ID (e.g., "123456") not project name.
+    Retrieves project information including creation time, last update, and
+    revision hash. Use after finding project ID from td_list_projects.
+
+    Common scenarios:
+    - Get project metadata before downloading archive
+    - Check when project was last updated
+    - Verify project exists by ID
+    - Get revision for version tracking
+
+    Note: Use numeric project ID (e.g., "123456") not project name.
+    For project contents, use td_download_project_archive.
     """
     # Input validation - prevent path traversal
     if not _validate_project_id(project_id):
@@ -547,12 +596,20 @@ async def td_list_workflows(
     status_filter: str | None = None,
     search: str | None = None,
 ) -> dict[str, Any]:
-    """List workflows across all projects.
+    """List all workflows to monitor executions and find failed jobs.
 
-    Returns workflow summaries by default. Set verbose=True for session details.
-    Use count parameter carefully - large values may hit token limits.
-    Filter by status: 'success', 'error', 'running', or None for all.
-    Optional search parameter filters by workflow or project name.
+    Shows workflows across all projects with their latest execution status.
+    Essential for monitoring data pipeline health and finding issues.
+
+    Common scenarios:
+    - Check which workflows are failing (status_filter="error")
+    - Monitor currently running workflows (status_filter="running")
+    - Find workflows by name (use search parameter)
+    - Get overview of all scheduled jobs
+    - Audit workflow execution patterns
+
+    Filter options: status ('success', 'error', 'running'), search by name.
+    Set verbose=True for execution history. Limit count to avoid token issues.
     """
     client = _create_client(include_workflow=True)
     if isinstance(client, dict):
@@ -661,6 +718,9 @@ exploration_tools.register_exploration_tools(
     _safe_extract_member,
 )
 diagnostic_tools.register_diagnostic_tools(mcp, _create_client, _format_error_response)
+
+# Register workflow execution tools
+execution_tools.register_execution_tools(mcp, _create_client, _format_error_response)
 
 if __name__ == "__main__":
     # Initialize and run the server

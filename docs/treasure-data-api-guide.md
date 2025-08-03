@@ -438,6 +438,289 @@ The API responses reveal certain patterns that can help identify system-generate
 - Have diverse naming patterns, often including personal names
 - Updated independently
 
+## Workflow Session and Attempt API Examples
+
+### Understanding Sessions and Attempts
+
+In Treasure Data's workflow system:
+- **Session**: A planned execution of a workflow at a specific time
+- **Attempt**: An actual execution instance of a session (can retry multiple times)
+- **Task**: Individual steps within an attempt that perform specific operations
+
+### List Sessions for a Workflow
+
+**Request:**
+```bash
+curl -s -H "Authorization: TD1 YOUR_API_KEY" "https://api-workflow.treasuredata.com/api/sessions?workflow=12345678&last=5"
+```
+
+**Response:**
+```json
+{
+  "sessions": [
+    {
+      "id": "123456789",
+      "project": {
+        "id": "123456",
+        "name": "example_project"
+      },
+      "workflow": {
+        "name": "daily_aggregation",
+        "id": "12345678"
+      },
+      "sessionUuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "sessionTime": "2025-08-03T03:00:00+00:00",
+      "lastAttempt": {
+        "id": "987654321",
+        "retryAttemptName": null,
+        "done": true,
+        "success": true,
+        "cancelRequested": false,
+        "params": {
+          "last_session_time": "2025-08-03T02:00:00+00:00",
+          "next_session_time": "2025-08-03T04:00:00+00:00"
+        },
+        "createdAt": "2025-08-03T03:00:00Z",
+        "finishedAt": "2025-08-03T03:05:30Z",
+        "status": "success"
+      }
+    }
+  ]
+}
+```
+
+### Get Session Details
+
+**Request:**
+```bash
+curl -s -H "Authorization: TD1 YOUR_API_KEY" "https://api-workflow.treasuredata.com/api/sessions/123456789"
+```
+
+**Response:**
+```json
+{
+  "id": "123456789",
+  "project": {
+    "id": "123456",
+    "name": "example_project"
+  },
+  "workflow": {
+    "name": "daily_aggregation",
+    "id": "12345678"
+  },
+  "sessionUuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "sessionTime": "2025-08-03T03:00:00+00:00",
+  "lastAttempt": {
+    "id": "987654321",
+    "retryAttemptName": null,
+    "done": true,
+    "success": true,
+    "cancelRequested": false,
+    "params": {
+      "last_session_time": "2025-08-03T02:00:00+00:00",
+      "next_session_time": "2025-08-03T04:00:00+00:00"
+    },
+    "createdAt": "2025-08-03T03:00:00Z",
+    "finishedAt": "2025-08-03T03:05:30Z",
+    "status": "success"
+  }
+}
+```
+
+### List Attempts for a Session
+
+**Request:**
+```bash
+curl -s -H "Authorization: TD1 YOUR_API_KEY" "https://api-workflow.treasuredata.com/api/sessions/123456789/attempts"
+```
+
+**Response:**
+```json
+{
+  "attempts": [
+    {
+      "id": "987654321",
+      "index": 1,
+      "project": {
+        "id": "123456",
+        "name": "example_project"
+      },
+      "workflow": {
+        "name": "daily_aggregation",
+        "id": "12345678"
+      },
+      "sessionId": "123456789",
+      "sessionUuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "sessionTime": "2025-08-03T03:00:00+00:00",
+      "retryAttemptName": null,
+      "done": true,
+      "success": true,
+      "cancelRequested": false,
+      "params": {
+        "last_session_time": "2025-08-03T02:00:00+00:00",
+        "next_session_time": "2025-08-03T04:00:00+00:00"
+      },
+      "createdAt": "2025-08-03T03:00:00Z",
+      "finishedAt": "2025-08-03T03:05:30Z",
+      "status": "success"
+    }
+  ]
+}
+```
+
+### Get Attempt Details
+
+**Request:**
+```bash
+curl -s -H "Authorization: TD1 YOUR_API_KEY" "https://api-workflow.treasuredata.com/api/attempts/987654321"
+```
+
+**Response:**
+```json
+{
+  "id": "987654321",
+  "index": 1,
+  "project": {
+    "id": "123456",
+    "name": "example_project"
+  },
+  "workflow": {
+    "name": "daily_aggregation",
+    "id": "12345678"
+  },
+  "sessionId": "123456789",
+  "sessionUuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "sessionTime": "2025-08-03T03:00:00+00:00",
+  "retryAttemptName": null,
+  "done": true,
+  "success": true,
+  "cancelRequested": false,
+  "params": {
+    "last_session_time": "2025-08-03T02:00:00+00:00",
+    "next_session_time": "2025-08-03T04:00:00+00:00"
+  },
+  "createdAt": "2025-08-03T03:00:00Z",
+  "finishedAt": "2025-08-03T03:05:30Z",
+  "status": "success"
+}
+```
+
+### Get Tasks for an Attempt
+
+**Request:**
+```bash
+curl -s -H "Authorization: TD1 YOUR_API_KEY" "https://api-workflow.treasuredata.com/api/attempts/987654321/tasks"
+```
+
+**Response:**
+```json
+{
+  "tasks": [
+    {
+      "id": "1234567890",
+      "fullName": "+main_workflow",
+      "parentId": null,
+      "config": {},
+      "upstreams": [],
+      "state": "success",
+      "cancelRequested": false,
+      "exportParams": {},
+      "storeParams": {},
+      "stateParams": {},
+      "updatedAt": "2025-08-03T03:05:30Z",
+      "retryAt": null,
+      "startedAt": "2025-08-03T03:00:00Z",
+      "error": {},
+      "isGroup": true
+    },
+    {
+      "id": "1234567891",
+      "fullName": "+main_workflow+extract_data",
+      "parentId": "1234567890",
+      "config": {
+        "td>": {
+          "query": "SELECT * FROM source_table WHERE dt >= '${last_session_time}'",
+          "database": "analytics_db",
+          "engine": "presto"
+        }
+      },
+      "upstreams": [],
+      "state": "success",
+      "cancelRequested": false,
+      "exportParams": {},
+      "storeParams": {
+        "td": {
+          "last_job_id": "123456789"
+        }
+      },
+      "stateParams": {},
+      "updatedAt": "2025-08-03T03:02:15Z",
+      "retryAt": null,
+      "startedAt": "2025-08-03T03:00:01Z",
+      "error": {},
+      "isGroup": false
+    },
+    {
+      "id": "1234567892",
+      "fullName": "+main_workflow+transform_data",
+      "parentId": "1234567890",
+      "config": {
+        "td>": {
+          "query": "INSERT INTO target_table SELECT ... FROM temp_table",
+          "database": "analytics_db",
+          "engine": "hive"
+        }
+      },
+      "upstreams": ["1234567891"],
+      "state": "success",
+      "cancelRequested": false,
+      "exportParams": {},
+      "storeParams": {},
+      "stateParams": {},
+      "updatedAt": "2025-08-03T03:05:30Z",
+      "retryAt": null,
+      "startedAt": "2025-08-03T03:02:16Z",
+      "error": {},
+      "isGroup": false
+    }
+  ]
+}
+```
+
+### Task States
+
+Tasks can have the following states:
+- `blocked`: Waiting for upstream dependencies
+- `ready`: Ready to run
+- `retry_waiting`: Waiting before retry
+- `running`: Currently executing
+- `planned`: Planned for execution
+- `success`: Completed successfully
+- `failed`: Failed with error
+- `canceled`: Execution was canceled
+- `group_retry_waiting`: Group task waiting for retry
+
+### Common Use Cases
+
+1. **Monitor Workflow Execution**
+   - Get session details to see overall execution status
+   - List tasks to identify which steps are running or failed
+
+2. **Debug Failed Workflows**
+   - Get attempt details to see error status
+   - List tasks to find exactly which task failed
+   - Check task error details and logs
+
+3. **Analyze Performance**
+   - Compare startedAt and updatedAt timestamps for execution duration
+   - Identify slow-running tasks as bottlenecks
+   - Track retry patterns and frequencies
+
+4. **Audit and Compliance**
+   - Track all execution attempts for audit trails
+   - Monitor parameter changes between executions
+   - Verify scheduled executions are running as expected
+
 ## Additional API Operations
 
 The Treasure Data API supports many more operations including:
@@ -450,5 +733,6 @@ The Treasure Data API supports many more operations including:
 6. **Access Control**: Manage permissions for resources
 7. **Export Operations**: Manage result URLs for exporting data
 8. **Workflow Operations**: Create and manage workflows using the Workflow API
+9. **Session/Attempt Operations**: Monitor and manage workflow executions
 
 Each operation returns a structured JSON response with relevant information and status indicators.
